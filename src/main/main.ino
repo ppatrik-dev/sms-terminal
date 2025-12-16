@@ -16,29 +16,26 @@
 #include <ctype.h>
 #include <stdint.h>
 
-// Convert character to integer value
-#define CHAR_TO_INT(ch) ((ch) - '0')
-
-// SPI screen config
+// Screen size config
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 
 // SPI pins config
-#define OLED_MOSI 23
-#define OLED_CLK  18
-#define OLED_DC   27
-#define OLED_CS   5
-#define OLED_RST  17
+#define SPI_MOSI 23
+#define SPI_CLK  18
+#define SPI_DC   27
+#define SPI_CS   5
+#define SPI_RST  17
 
 // Adafruit display object
-Adafruit_SSD1306 display(
+Adafruit_SSD1306 Display(
   SCREEN_WIDTH,
   SCREEN_HEIGHT,
-  OLED_MOSI,
-  OLED_CLK,
-  OLED_DC,
-  OLED_RST,
-  OLED_CS
+  SPI_MOSI,
+  SPI_CLK,
+  SPI_DC,
+  SPI_RST,
+  SPI_CS
 );
 
 // Display text font width
@@ -51,60 +48,83 @@ const uint8_t COLS = 3;
 // Number of keypad rows
 const uint8_t ROWS = 4;
 
-// GPIO cols pins        C1, C2, C3
-uint8_t colPins[COLS] = {25, 26, 13};
+// GPIO cols pins              C1, C2, C3
+const uint8_t ColPins[COLS] = {25, 26, 13};
 
-// GPIO rows pins        R1, R2, R3, R4
-uint8_t rowPins[ROWS] = {14, 12, 19, 16};
+// GPIO rows pins              R1, R2, R3, R4
+const uint8_t RowPins[ROWS] = {14, 12, 19, 16};
 
-// Keypad symbols
-char keypad[ROWS][COLS] = {
-  {'1','2','3'}, // R1
-  {'4','5','6'}, // R2
-  {'7','8','9'}, // R3
-  {'*','0','#'}  // R4
-//  C1, C2, C3
+typedef enum {
+  KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, 
+  KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, 
+  KEY_S, KEY_H, KEY_NONE = -1
+} Key;
+
+// Keypad keys
+const Key Keypad[ROWS][COLS] = {
+  {KEY_1, KEY_2, KEY_3}, // ROW1
+  {KEY_4, KEY_5, KEY_6}, // ROW2
+  {KEY_7, KEY_8, KEY_9}, // ROW3
+  {KEY_S, KEY_0, KEY_H}  // ROW4
+//  COL1   COL2   COL3
 };
 
 // Key characters
-const char* keyChars[10] = {
+const char* KeySymbols[] = {
   " 0",     // Key 0
   ".,?!1",  // Key 1
-  "ABC2",   // Key 2
-  "DEF3",   // Key 3
-  "GHI4",   // Key 4
-  "JKL5",   // Key 5
-  "MNO6",   // Key 6
-  "PQRS7",  // Key 7
-  "TUV8",   // Key 8
-  "WXYZ9"   // Key 9
+  "abc2",   // Key 2
+  "def3",   // Key 3
+  "ghi4",   // Key 4
+  "jkl5",   // Key 5
+  "mno6",   // Key 6
+  "pqrs7",  // Key 7
+  "tuv8",   // Key 8
+  "wxyz9"   // Key 9
 };
 
 // Upper case mode active flag 
 bool upperCaseMode = false;
 
+// Pressed key value
+Key pressKey = KEY_NONE;
+
 // Multitap index of key character
-int multitapIndex = 0;
+Key lastKey = KEY_NONE;
+
+// Current key symbol index
+uint8_t symbolIndex = 0;
+
+// Key multitap delay
+uint16_t multitapDelay = 1000;
+
+// Current time
+uint64_t now = 0;
+
+// Last key press time
+uint64_t lastPressTime = 0;
 
 /**
  * @brief 
  * 
- * @return char 
+ * @return Key 
  */
-char scanKeypad() {
-  for (int c = 0; c < 3; c++) {
-    digitalWrite(colPins[c], LOW);
-    for (int r = 0; r < 4; r++) {
-      if (digitalRead(rowPins[r]) == LOW) {
-        while(digitalRead(rowPins[r]) == LOW);
-        digitalWrite(colPins[c], HIGH);
-        return keypad[r][c];
+Key scanKeypad() {
+  for (int c = 0; c < COLS; ++c) {
+    digitalWrite(ColPins[c], LOW);
+
+    for (int r = 0; r < ROWS; ++r) {
+      if (digitalRead(RowPins[r]) == LOW) {
+        while(digitalRead(RowPins[r]) == LOW);
+
+        digitalWrite(ColPins[c], HIGH);
+        return Keypad[r][c];
       }
     }
-    digitalWrite(colPins[c], HIGH);
+    digitalWrite(ColPins[c], HIGH);
   }
 
-  return '\0';
+  return KEY_NONE;
 }
 
 /**
@@ -113,14 +133,12 @@ char scanKeypad() {
  * @param index 
  * @return char 
  */
-char getKeyChar(int index) {
-  const char *chars = keyChars[index];
-
-  if (multitapIndex < strlen(chars)) {
-    return chars[multitapIndex];
+inline char getKeyChar(Key key) {
+  if (key < KEY_0 || key > KEY_9) {
+    return KEY_NONE;
   }
 
-  return '\0';
+  return KeySymbols[key][symbolIndex];
 }
 
 /**
@@ -128,15 +146,44 @@ char getKeyChar(int index) {
  * 
  * @param key 
  */
-void displayKeyChar(const char key) {
-  char letter = getKeyChar(CHAR_TO_INT(key));
+void displayKey(Key key, bool isCycle) {
+  char ch = getKeyChar(key);
 
-  if (!upperCaseMode) {
-    letter = (char)tolower(letter);
+  if (upperCaseMode && !isdigit(ch)) {
+    ch = (char)toupper(ch);
   }
 
-  display.print(letter);
-  display.display();
+  if (isCycle) {
+    int16_t x = Display.getCursorX();
+
+    if (x >= FONT_WIDTH) {
+      Display.setCursor(x - FONT_WIDTH, Display.getCursorY());
+    }
+  }
+
+  Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+
+  Display.print(ch);
+  Display.display();
+}
+
+void handleKey(Key key) {
+  if (key == lastKey && (now - lastPressTime < multitapDelay)) {
+    size_t symbolsLen = strlen(KeySymbols[key]);
+    symbolIndex++;
+
+    if (symbolIndex >= symbolsLen) {
+      symbolIndex = 0;
+    }
+
+    displayKey(key, true);
+  }
+  else {
+    symbolIndex = 0;
+    lastKey = key;
+
+    displayKey(key, false);
+  }
 }
 
 /**
@@ -152,26 +199,26 @@ inline void changeCaseMode() {
  * 
  */
 void deleteLastChar() {
-  int x = display.getCursorX();
-  int y = display.getCursorY();
+  int16_t x = Display.getCursorX();
+  int16_t y = Display.getCursorY();
 
   if (x >= FONT_WIDTH) {
-    int targetX = x - FONT_WIDTH;
-    int targetY = y;
+    int16_t targetX = x - FONT_WIDTH;
+    int16_t targetY = y;
 
-    display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
+    Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
 
-    display.setCursor(targetX, targetY);
-    display.display();
+    Display.setCursor(targetX, targetY);
+    Display.display();
   }
   else if (y >= FONT_HEIGHT) {
-    int charsPerLine = SCREEN_WIDTH / FONT_WIDTH;
-    int targetX = (charsPerLine - 1) * FONT_WIDTH;
-    int targetY = y - FONT_HEIGHT;
+    uint8_t charsPerLine = SCREEN_WIDTH / FONT_WIDTH;
+    int16_t targetX = (charsPerLine - 1) * FONT_WIDTH;
+    int16_t targetY = y - FONT_HEIGHT;
 
-    display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
-    display.setCursor(targetX, targetY);
-    display.display();
+    Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
+    Display.setCursor(targetX, targetY);
+    Display.display();
   }
 }
 
@@ -182,22 +229,22 @@ void deleteLastChar() {
 void setup() {
   Serial.begin(921600);
 
-  display.begin(SSD1306_SWITCHCAPVCC);
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setRotation(2);
-  display.setCursor(0, 0);
-  display.display();
+  Display.begin(SSD1306_SWITCHCAPVCC);
+  Display.clearDisplay();
+  Display.setTextSize(2);
+  Display.setTextColor(SSD1306_WHITE);
+  Display.setRotation(2);
+  Display.setCursor(0, 0);
+  Display.display();
 
   // Columns as OUTPUT, set HIGH initially
-  for (int c = 0; c < 3; c++) {
-    pinMode(colPins[c], OUTPUT);
-    digitalWrite(colPins[c], HIGH);
+  for (int c = 0; c < 3; ++c) {
+    pinMode(ColPins[c], OUTPUT);
+    digitalWrite(ColPins[c], HIGH);
   }
 
-  for (int r = 0; r < 4; r++) {
-    pinMode(rowPins[r], INPUT_PULLUP);
+  for (int r = 0; r < 4; ++r) {
+    pinMode(RowPins[r], INPUT_PULLUP);
   } 
 }
 
@@ -206,23 +253,29 @@ void setup() {
  * 
  */
 void loop() {
-  char key = scanKeypad();
+  now = millis();
 
-  switch (key) {
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-      displayKeyChar(key);
-      break;
+  pressKey = scanKeypad();
 
-    case '*':
-      changeCaseMode();
-      break;
+  if (pressKey != KEY_NONE) {
+    switch (pressKey) {
+      case KEY_0: case KEY_1: 
+      case KEY_2: case KEY_3: 
+      case KEY_4: case KEY_5: 
+      case KEY_6: case KEY_7: 
+      case KEY_8: case KEY_9:
+        handleKey(pressKey);
+        break;
 
-    case '#':
-      deleteLastChar();
-      break;
+      case KEY_S:
+        changeCaseMode();
+        break;
 
-    default:
-      break;
+      case KEY_H:
+        deleteLastChar();
+        break;
+    }
+
+    lastPressTime = now;
   }
 }
