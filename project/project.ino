@@ -12,19 +12,10 @@
 #include "Display.h"
 #include "Keypad.h"
 
-// Adafruit display object
-Adafruit_SSD1306 Display(
-  SCREEN_WIDTH,
-  SCREEN_HEIGHT,
-  SPI_MOSI,
-  SPI_CLK,
-  SPI_DC,
-  SPI_RST,
-  SPI_CS
-);
-
 // Current time
 uint64_t now = 0;
+
+extern uint64_t lastPressTime;
 
 /**
  * @brief 
@@ -32,15 +23,7 @@ uint64_t now = 0;
  */
 void setup() {
   Serial.begin(921600);
-
-  Display.begin(SSD1306_SWITCHCAPVCC);
-  Display.clearDisplay();
-  Display.setTextSize(2);
-  Display.setTextColor(SSD1306_WHITE);
-  Display.setRotation(2);
-  Display.setCursor(0, 0);
-  Display.display();
-
+  initDisplay();
   initKeypad();
 }
 
@@ -68,8 +51,10 @@ void loop() {
         break;
 
       case KEY_H:
-        deleteLastChar();
+        handleDelete();
         break;
     }
+    lastPressTime = now;
   }
+  updateCursor();
 }

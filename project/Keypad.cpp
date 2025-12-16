@@ -60,7 +60,7 @@ Key lastKey = KEY_NONE;
 uint8_t symbolIndex = 0;
 
 // Key multitap delay
-uint16_t multitapDelay = 1000;
+uint16_t multitapDelay = 500;
 
 // Last key press time
 uint64_t lastPressTime = 0;
@@ -79,6 +79,10 @@ void initKeypad() {
 }
 
 Key scanKeypad() {
+  if (now - lastPressTime >= multitapDelay) {
+    enableCursor();
+  }
+
   for (int c = 0; c < KEYPAD_COLS; ++c) {
     digitalWrite(ColPins[c], LOW);
 
@@ -87,7 +91,6 @@ Key scanKeypad() {
         while(digitalRead(RowPins[r]) == LOW);
 
         digitalWrite(ColPins[c], HIGH);
-        lastPressTime = now;
 
         return Keypad[r][c];
       }
@@ -119,6 +122,7 @@ void displayKey(Key key, bool isCycle) {
   }
 
   if (isCycle) {
+
     int16_t x = Display.getCursorX();
 
     if (x >= FONT_WIDTH) {
@@ -127,13 +131,14 @@ void displayKey(Key key, bool isCycle) {
   }
 
   Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
-
   Display.print(ch);
   Display.display();
 }
 
 void handleKey(Key key) {
   if (key == lastKey && (now - lastPressTime < multitapDelay)) {
+    disableCursor();
+
     size_t symbolsLen = strlen(KeySymbols[key]);
     symbolIndex++;
 
@@ -145,9 +150,8 @@ void handleKey(Key key) {
   }
   else {
     symbolIndex = 0;
-    lastKey = key;
-
     displayKey(key, false);
+    lastKey = key;
   }
 }
 
@@ -155,30 +159,9 @@ void changeCaseMode() {
   upperCaseMode = !upperCaseMode;
 }
 
-/**
- * @brief 
- * 
- */
-void deleteLastChar() {
-  int16_t x = Display.getCursorX();
-  int16_t y = Display.getCursorY();
+void handleDelete() {
+  deleteChar();
 
-  if (x >= FONT_WIDTH) {
-    int16_t targetX = x - FONT_WIDTH;
-    int16_t targetY = y;
-
-    Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
-
-    Display.setCursor(targetX, targetY);
-    Display.display();
-  }
-  else if (y >= FONT_HEIGHT) {
-    uint8_t charsPerLine = SCREEN_WIDTH / FONT_WIDTH;
-    int16_t targetX = (charsPerLine - 1) * FONT_WIDTH;
-    int16_t targetY = y - FONT_HEIGHT;
-
-    Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
-    Display.setCursor(targetX, targetY);
-    Display.display();
-  }
+  lastKey = KEY_NONE;
+  symbolIndex = 0;
 }

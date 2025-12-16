@@ -71,6 +71,6 @@ void changeCaseMode();
  * @brief 
  * 
  */
-void deleteLastChar();
+void handleDelete();
 
 #endif

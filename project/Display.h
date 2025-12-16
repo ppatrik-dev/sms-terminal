@@ -31,4 +31,41 @@
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 16
 
+/**
+ * @brief 
+ * 
+ */
+void initDisplay();
+
+/**
+ * @brief 
+ * 
+ * @param visible 
+ */
+void drawCursor(bool visible);
+
+/**
+ * @brief 
+ * 
+ */
+void updateCursor();
+
+/**
+ * @brief 
+ * 
+ */
+void enableCursor();
+
+/**
+ * @brief 
+ * 
+ */
+void disableCursor();
+
+/**
+ * @brief 
+ * 
+ */
+void deleteChar();
+
 #endif
