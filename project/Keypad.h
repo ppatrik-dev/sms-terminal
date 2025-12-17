@@ -73,4 +73,10 @@ void changeCaseMode();
  */
 void handleDelete();
 
+/**
+ * @brief 
+ * 
+ */
+void handleLongPress(Key key, uint64_t currentLoopTime);
+
 #endif
