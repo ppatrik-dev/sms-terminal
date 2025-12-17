@@ -81,7 +81,7 @@ Coord getTargetCursorPos(Direction direction) {
     case RIGHT:
       if (x + FONT_WIDTH >= SCREEN_WIDTH) {
         // Wrap to start of next line
-        x = 0;
+        x = MIN_X_POS;
         y += FONT_HEIGHT;
       } else {
         x += FONT_WIDTH;
@@ -134,6 +134,7 @@ void drawCursor(bool visible) {
   if (targetX + FONT_WIDTH > SCREEN_WIDTH) {
     targetX = MIN_X_POS;
     targetY += FONT_HEIGHT;
+    Display.setCursor(targetX, targetY);
   }
 
   uint8_t color = visible ? SSD1306_WHITE : SSD1306_BLACK;
@@ -145,7 +146,6 @@ void drawCursor(bool visible) {
   }
   else {
     Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, color);
-
   }
   
   Display.display();
@@ -204,7 +204,6 @@ void moveLeft(uint64_t time) {
       int16_t targetY = crs.y;
 
       Display.setCursor(targetX, targetY);
-      // Display.drawRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_WHITE);
 
       drawCursor(true);
       lastBlinkTime = time;
