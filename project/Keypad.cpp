@@ -60,7 +60,7 @@ Key lastKey = KEY_NONE;
 uint8_t symbolIndex = 0;
 
 // Key multitap delay
-uint16_t multitapDelay = 750;
+uint16_t multitapDelay = 500;
 
 // Last key press time
 uint64_t lastPressTime = 0;
@@ -191,6 +191,7 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
   switch (key) {
     // Move top
     case KEY_2:
+      moveUp(currentLoopTime);
       break;
 
     // Move left
@@ -205,6 +206,8 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
 
     // Move down
     case KEY_8:
+      moveDown(currentLoopTime);
+      break;
 
     case KEY_H:
       if (currentLoopTime - lastDeleteTime > deleteHoldDelay) {

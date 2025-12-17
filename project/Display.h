@@ -91,6 +91,13 @@ void deleteChar(uint64_t time);
 /**
  * @brief 
  * 
+ * @param time 
+ */
+void moveUp(uint64_t time);
+
+/**
+ * @brief 
+ * 
  */
 void moveLeft(uint64_t time);
 
@@ -99,5 +106,11 @@ void moveLeft(uint64_t time);
  * 
  */
 void moveRight(uint64_t time);
+
+/**
+ * @brief 
+ * 
+ */
+void moveDown(uint64_t time);
 
 #endif

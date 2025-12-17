@@ -193,6 +193,28 @@ void deleteChar(uint64_t time) {
   }
 }
 
+void moveUp(uint64_t time) {
+  // Check if we are at least on the second line
+  if (bufferIndex >= CHARS_PER_LINE) {
+    if (time - lastBlinkTime > moveSpeedDelay) {
+      drawCursor(false);
+      
+      // Move index back by one full row
+      bufferIndex -= CHARS_PER_LINE;
+
+      Coord crs = getTargetCursorPos(UP);
+      Display.setCursor(crs.x, crs.y);
+
+      drawCursor(true);
+      lastBlinkTime = time;
+    }
+  }
+  else {
+    drawCursor(true);
+    lastBlinkTime = time;
+  }
+}
+
 void moveLeft(uint64_t time) {
   if (bufferIndex > 0) {
     if (time - lastBlinkTime > moveSpeedDelay) {
@@ -200,10 +222,7 @@ void moveLeft(uint64_t time) {
       bufferIndex--;
 
       Coord crs = getTargetCursorPos(LEFT);
-      int16_t targetX = crs.x;
-      int16_t targetY = crs.y;
-
-      Display.setCursor(targetX, targetY);
+      Display.setCursor(crs.x, crs.y);
 
       drawCursor(true);
       lastBlinkTime = time;
@@ -222,10 +241,29 @@ void moveRight(uint64_t time) {
       bufferIndex++;
 
       Coord crs = getTargetCursorPos(RIGHT);
-      int16_t targetX = crs.x;
-      int16_t targetY = crs.y;
+      Display.setCursor(crs.x, crs.y);
 
-      Display.setCursor(targetX, targetY);
+      drawCursor(true);
+      lastBlinkTime = time;
+    }
+  }
+  else {
+    drawCursor(true);
+    lastBlinkTime = time;
+  }
+}
+
+void moveDown(uint64_t time) {
+  // Check if moving down keeps us within the buffer length
+  if (bufferIndex + CHARS_PER_LINE <= getBufferLen()) {
+    if (time - lastBlinkTime > moveSpeedDelay) {
+      drawCursor(false);
+      
+      // Move index forward by one full row
+      bufferIndex += CHARS_PER_LINE;
+
+      Coord crs = getTargetCursorPos(DOWN);
+      Display.setCursor(crs.x, crs.y);
 
       drawCursor(true);
       lastBlinkTime = time;
