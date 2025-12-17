@@ -9,18 +9,26 @@
  * 
  */
 
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
 #include <stdint.h>
+#include <stdio.h>
+
 #include "Display.h"
+#include "Buffer.h"
 
 uint64_t lastBlinkTime = 0;
 bool cursorVisible = false;
-bool renderEnabled = true;
-const uint32_t BLINK_INTERVAL = 1000;
+bool cursorEnabled = true;
+const uint32_t BLINK_INTERVAL = 750;
 
 // Delay for cursor move
 uint64_t moveSpeedDelay = 250;
 
 extern uint64_t now;
+extern uint8_t bufferIndex;
 
 Adafruit_SSD1306 Display(
   SCREEN_WIDTH,
@@ -32,6 +40,15 @@ Adafruit_SSD1306 Display(
   SPI_CS
 );
 
+const uint16_t CHARS_PER_LINE = SCREEN_WIDTH / FONT_WIDTH;
+const uint16_t TOTAL_LINES = SCREEN_HEIGHT / FONT_HEIGHT;
+
+const int16_t MIN_X_POS = 0;
+const int16_t MAX_X_POS = (CHARS_PER_LINE - 1) * FONT_WIDTH;
+
+const int16_t MIN_Y_POS = 0;
+const int16_t MAX_Y_POS = (TOTAL_LINES - 1) * FONT_HEIGHT;
+
 void initDisplay() {
   Display.begin(SSD1306_SWITCHCAPVCC);
   Display.clearDisplay();
@@ -42,25 +59,102 @@ void initDisplay() {
   Display.display();
 }
 
+Coord getTargetCursorPos(Direction direction) {
+  int16_t x = Display.getCursorX();
+  int16_t y = Display.getCursorY();
+
+  switch (direction) {
+    case UP:
+      y -= FONT_HEIGHT;
+      break;
+
+    case LEFT:
+      if (x - FONT_WIDTH < MIN_X_POS) {
+        // Wrap to end of previous line
+        x = MAX_X_POS;
+        y -= FONT_HEIGHT;
+      } else {
+        x -= FONT_WIDTH;
+      }
+      break;
+
+    case RIGHT:
+      if (x + FONT_WIDTH >= SCREEN_WIDTH) {
+        // Wrap to start of next line
+        x = 0;
+        y += FONT_HEIGHT;
+      } else {
+        x += FONT_WIDTH;
+      }
+      break;
+
+    case DOWN:
+      y += FONT_HEIGHT;
+    
+    default:
+      break;
+  }
+
+  if (y < MIN_Y_POS) {
+    x = MIN_X_POS;
+    y = MIN_Y_POS;
+  }
+  if (y > MAX_Y_POS) {
+    x = MAX_X_POS;
+    y = MAX_Y_POS;
+  }
+
+  return {x, y};
+}
+
+
+void drawChar(char ch, bool isCycle) {
+  if (isCycle) {
+    Coord crs = getTargetCursorPos(LEFT);
+    int16_t targetX = crs.x;
+    int16_t targetY = crs.y;
+
+    Display.setCursor(targetX, targetY);
+
+    bufferIndex--;
+  }
+
+  setBufferChar(ch);
+  bufferIndex++;
+  
+  Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+  Display.print(ch);
+  Display.display();
+}
+
 void drawCursor(bool visible) {
   int16_t targetX = Display.getCursorX();
   int16_t targetY = Display.getCursorY();
 
   if (targetX + FONT_WIDTH > SCREEN_WIDTH) {
-    targetX = 0;
+    targetX = MIN_X_POS;
     targetY += FONT_HEIGHT;
   }
 
-  uint16_t color = visible ? SSD1306_WHITE : SSD1306_BLACK;
+  uint8_t color = visible ? SSD1306_WHITE : SSD1306_BLACK;
 
-  Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, color);
+  char ch = getBufferChar();
+  
+  if (ch != MESSAGE_END) {
+    Display.drawRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, color);
+  }
+  else {
+    Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, color);
+
+  }
+  
+  Display.display();
 
   cursorVisible = visible;
-  Display.display();
 }
 
 void updateCursor() {
-  if (now - lastBlinkTime >= BLINK_INTERVAL && renderEnabled) {
+  if (now - lastBlinkTime >= BLINK_INTERVAL && cursorEnabled) {
     cursorVisible = !cursorVisible;
     drawCursor(cursorVisible);
     lastBlinkTime = now;
@@ -68,90 +162,77 @@ void updateCursor() {
 }
 
 void enableCursor() {
-  renderEnabled = true;
+  cursorEnabled = true;
 }
 
 void disableCursor() {
   drawCursor(false);
-  renderEnabled = false;
+  cursorEnabled = false;
 }
 
 /**
  * @brief 
  * 
  */
-void deleteChar() {
-  int16_t x = Display.getCursorX();
-  int16_t y = Display.getCursorY();
+void deleteChar(uint64_t time) {
+  if (bufferIndex == getBufferLen()) {
+    Coord crs = getTargetCursorPos(LEFT);
+    int16_t targetX = crs.x;
+    int16_t targetY = crs.y;
 
-  drawCursor(false);
-  cursorVisible = false;
+    drawCursor(false);
 
-  if (x >= FONT_WIDTH) {
-    int16_t targetX = x - FONT_WIDTH;
-    int16_t targetY = y;
-
-    Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
+    bufferIndex--;
+    setBufferChar(MESSAGE_END);
 
     Display.setCursor(targetX, targetY);
+    drawCursor(true);
+    Display.display();
+    
+    lastBlinkTime = time;
   }
-  else if (y >= FONT_HEIGHT) {
-    uint8_t charsPerLine = SCREEN_WIDTH / FONT_WIDTH;
-    int16_t targetX = (charsPerLine - 1) * FONT_WIDTH;
-    int16_t targetY = y - FONT_HEIGHT;
-
-    Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
-    Display.setCursor(targetX, targetY);
-  }
-  else {
-    return;
-  }
-
-  drawCursor(true);
-  cursorVisible = true;
-  lastBlinkTime = now;
-
-  Display.display();
 }
 
 void moveLeft(uint64_t time) {
-  if (time - lastBlinkTime > moveSpeedDelay) {
-    drawCursor(false);
+  if (bufferIndex > 0) {
+    if (time - lastBlinkTime > moveSpeedDelay) {
+      drawCursor(false);
+      bufferIndex--;
 
-    int16_t x = Display.getCursorX();
-    int16_t y = Display.getCursorY();
+      Coord crs = getTargetCursorPos(LEFT);
+      int16_t targetX = crs.x;
+      int16_t targetY = crs.y;
 
-    if (x >= FONT_WIDTH) {
-      Display.setCursor(x - FONT_WIDTH, y);
+      Display.setCursor(targetX, targetY);
+      // Display.drawRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_WHITE);
+
+      drawCursor(true);
+      lastBlinkTime = time;
     }
-    else if (y >= FONT_HEIGHT) {
-      int16_t charsPerLine = SCREEN_WIDTH / FONT_WIDTH;
-      int16_t targetX = (charsPerLine - 1) * FONT_WIDTH;
-
-      Display.setCursor(targetX, y - FONT_HEIGHT);
-    }
-
+  }
+  else {
     drawCursor(true);
     lastBlinkTime = time;
   }
 }
 
 void moveRight(uint64_t time) {
-  if (time - lastBlinkTime > moveSpeedDelay) {
-    drawCursor(false);
+  if (bufferIndex < getBufferLen()) {
+    if ((time - lastBlinkTime > moveSpeedDelay)) {
+      drawCursor(false);
+      bufferIndex++;
 
-    int16_t x = Display.getCursorX();
-    int16_t y = Display.getCursorY();
+      Coord crs = getTargetCursorPos(RIGHT);
+      int16_t targetX = crs.x;
+      int16_t targetY = crs.y;
 
-    int16_t maxX = ((SCREEN_WIDTH / FONT_WIDTH) - 1) * FONT_WIDTH;
+      Display.setCursor(targetX, targetY);
 
-    if (x >= maxX) {
-      Display.setCursor(0, y + FONT_HEIGHT);
+      drawCursor(true);
+      lastBlinkTime = time;
     }
-    else {
-      Display.setCursor(x + FONT_WIDTH, y);
-    }
-
+  }
+  else {
     drawCursor(true);
     lastBlinkTime = time;
   }

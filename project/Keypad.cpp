@@ -12,10 +12,10 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdint.h>
-#include "Display.h"
+#include <Arduino.h>
 #include "Keypad.h"
+#include "Display.h"
 
-extern Adafruit_SSD1306 Display;
 extern uint64_t now;
 
 // GPIO columns pins                  C1, C2, C3
@@ -60,7 +60,7 @@ Key lastKey = KEY_NONE;
 uint8_t symbolIndex = 0;
 
 // Key multitap delay
-uint16_t multitapDelay = 500;
+uint16_t multitapDelay = 750;
 
 // Last key press time
 uint64_t lastPressTime = 0;
@@ -100,13 +100,12 @@ Key scanKeypad() {
     for (int r = 0; r < KEYPAD_ROWS; ++r) {
       if (digitalRead(RowPins[r]) == LOW) {
         bool longPressTriggered = false;
-        // uint64_t pressStartTime = millis();
-        lastPressTime = now;
+        uint64_t pressStartTime = millis();
 
         while(digitalRead(RowPins[r]) == LOW) {
           uint64_t loopTime = millis();
 
-          if (loopTime - lastPressTime > longPressDelay) {
+          if (loopTime - pressStartTime > longPressDelay) {
             handleLongPress(Keypad[r][c], loopTime);
             longPressTriggered = true;
           }
@@ -150,18 +149,7 @@ void displayKey(Key key, bool isCycle) {
     ch = (char)toupper(ch);
   }
 
-  if (isCycle) {
-
-    int16_t x = Display.getCursorX();
-
-    if (x >= FONT_WIDTH) {
-      Display.setCursor(x - FONT_WIDTH, Display.getCursorY());
-    }
-  }
-
-  Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
-  Display.print(ch);
-  Display.display();
+  drawChar(ch, isCycle);
 }
 
 void handleKey(Key key) {
@@ -182,6 +170,8 @@ void handleKey(Key key) {
     displayKey(key, false);
     lastKey = key;
   }
+
+  lastPressTime = now;
 }
 
 void changeCaseMode() {
@@ -189,7 +179,7 @@ void changeCaseMode() {
 }
 
 void handleDelete(uint64_t time) {
-  deleteChar();
+  deleteChar(time);
 
   lastKey = KEY_NONE;
   symbolIndex = 0;

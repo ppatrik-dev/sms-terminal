@@ -12,10 +12,6 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-
 // Screen size config
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -31,11 +27,35 @@
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 16
 
+typedef enum {
+    UP, LEFT, RIGHT, DOWN
+} Direction;
+
+typedef struct {
+  int16_t x;
+  int16_t y;
+} Coord;
+
 /**
  * @brief 
  * 
  */
 void initDisplay();
+
+/**
+ * @brief
+ * 
+ * @param direction 
+ * @return Coord 
+ */
+Coord getTargetCursorPos(Direction direction);
+
+/**
+ * @brief 
+ * 
+ * @param ch 
+ */
+void drawChar(char ch, bool isCycle);
 
 /**
  * @brief 
@@ -66,7 +86,7 @@ void disableCursor();
  * @brief 
  * 
  */
-void deleteChar();
+void deleteChar(uint64_t time);
 
 /**
  * @brief 
