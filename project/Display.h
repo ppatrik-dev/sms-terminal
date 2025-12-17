@@ -68,4 +68,16 @@ void disableCursor();
  */
 void deleteChar();
 
+/**
+ * @brief 
+ * 
+ */
+void moveLeft(uint64_t time);
+
+/**
+ * @brief 
+ * 
+ */
+void moveRight(uint64_t time);
+
 #endif

@@ -15,8 +15,6 @@
 // Current time
 uint64_t now = 0;
 
-extern uint64_t lastPressTime;
-
 /**
  * @brief 
  * 
@@ -51,10 +49,9 @@ void loop() {
         break;
 
       case KEY_H:
-        handleDelete();
+        handleDelete(now);
         break;
     }
-    lastPressTime = now;
   }
   updateCursor();
 }

@@ -71,12 +71,12 @@ void changeCaseMode();
  * @brief 
  * 
  */
-void handleDelete();
+void handleDelete(uint64_t time);
 
 /**
  * @brief 
  * 
  */
-void handleLongPress(Key key, uint64_t currentLoopTime);
+void handleLongPress(Key key, uint64_t time);
 
 #endif

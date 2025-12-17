@@ -17,6 +17,9 @@ bool cursorVisible = false;
 bool renderEnabled = true;
 const uint32_t BLINK_INTERVAL = 1000;
 
+// Delay for cursor move
+uint64_t moveSpeedDelay = 250;
+
 extern uint64_t now;
 
 Adafruit_SSD1306 Display(
@@ -99,7 +102,6 @@ void deleteChar() {
 
     Display.fillRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, SSD1306_BLACK);
     Display.setCursor(targetX, targetY);
-    Display.display();
   }
   else {
     return;
@@ -110,4 +112,47 @@ void deleteChar() {
   lastBlinkTime = now;
 
   Display.display();
+}
+
+void moveLeft(uint64_t time) {
+  if (time - lastBlinkTime > moveSpeedDelay) {
+    drawCursor(false);
+
+    int16_t x = Display.getCursorX();
+    int16_t y = Display.getCursorY();
+
+    if (x >= FONT_WIDTH) {
+      Display.setCursor(x - FONT_WIDTH, y);
+    }
+    else if (y >= FONT_HEIGHT) {
+      int16_t charsPerLine = SCREEN_WIDTH / FONT_WIDTH;
+      int16_t targetX = (charsPerLine - 1) * FONT_WIDTH;
+
+      Display.setCursor(targetX, y - FONT_HEIGHT);
+    }
+
+    drawCursor(true);
+    lastBlinkTime = time;
+  }
+}
+
+void moveRight(uint64_t time) {
+  if (time - lastBlinkTime > moveSpeedDelay) {
+    drawCursor(false);
+
+    int16_t x = Display.getCursorX();
+    int16_t y = Display.getCursorY();
+
+    int16_t maxX = ((SCREEN_WIDTH / FONT_WIDTH) - 1) * FONT_WIDTH;
+
+    if (x >= maxX) {
+      Display.setCursor(0, y + FONT_HEIGHT);
+    }
+    else {
+      Display.setCursor(x + FONT_WIDTH, y);
+    }
+
+    drawCursor(true);
+    lastBlinkTime = time;
+  }
 }

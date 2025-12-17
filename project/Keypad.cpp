@@ -65,6 +65,7 @@ uint16_t multitapDelay = 500;
 // Last key press time
 uint64_t lastPressTime = 0;
 
+// Delay for long press
 uint64_t longPressDelay = 500;
 
 // Delete hold delay
@@ -87,7 +88,7 @@ void initKeypad() {
 }
 
 Key scanKeypad() {
-  uint64_t currentMillis = millis();
+  uint64_t currentMillis = now;
 
   if (currentMillis - lastPressTime >= multitapDelay) {
     enableCursor();
@@ -99,12 +100,13 @@ Key scanKeypad() {
     for (int r = 0; r < KEYPAD_ROWS; ++r) {
       if (digitalRead(RowPins[r]) == LOW) {
         bool longPressTriggered = false;
-        uint64_t pressStartTime = millis();
+        // uint64_t pressStartTime = millis();
+        lastPressTime = now;
 
         while(digitalRead(RowPins[r]) == LOW) {
           uint64_t loopTime = millis();
 
-          if (loopTime - pressStartTime > longPressDelay) {
+          if (loopTime - lastPressTime > longPressDelay) {
             handleLongPress(Keypad[r][c], loopTime);
             longPressTriggered = true;
           }
@@ -124,7 +126,7 @@ Key scanKeypad() {
     }
     digitalWrite(ColPins[c], HIGH);
   }
-
+  
   return KEY_NONE;
 }
 
@@ -186,19 +188,37 @@ void changeCaseMode() {
   upperCaseMode = !upperCaseMode;
 }
 
-void handleDelete() {
+void handleDelete(uint64_t time) {
   deleteChar();
 
   lastKey = KEY_NONE;
   symbolIndex = 0;
+
+  lastDeleteTime = time;
 }
 
 void handleLongPress(Key key, uint64_t currentLoopTime) {
   switch (key) {
+    // Move top
+    case KEY_2:
+      break;
+
+    // Move left
+    case KEY_4:
+      moveLeft(currentLoopTime);
+      break;
+
+    // Move right
+    case KEY_6:
+      moveRight(currentLoopTime);
+      break;
+
+    // Move down
+    case KEY_8:
+
     case KEY_H:
-      if (currentLoopTime - lastDeleteTime >= deleteHoldDelay) {
-        handleDelete();
-        lastDeleteTime = currentLoopTime;
+      if (currentLoopTime - lastDeleteTime > deleteHoldDelay) {
+        handleDelete(currentLoopTime);
       }
       break;
     
