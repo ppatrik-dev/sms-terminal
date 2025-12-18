@@ -15,12 +15,14 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "Display.h"
 #include "Buffer.h"
 
 extern uint64_t now;
 extern uint8_t bufferIndex;
+extern bool upperCaseMode;
 
 bool cursorVisible = false;
 bool cursorEnabled = true;
@@ -42,8 +44,31 @@ void initDisplay() {
   Display.setTextSize(2);
   Display.setTextColor(SSD1306_WHITE);
   Display.setRotation(2);
-  Display.setCursor(0, 0);
+  Display.setCursor(MIN_X_POS, MIN_Y_POS);
   Display.display();
+}
+
+void drawHeader() {
+  int16_t savedX = Display.getCursorX();
+  int16_t savedY = Display.getCursorY();
+
+  Display.fillRect(0, 0, SCREEN_WIDTH, HEADER_HEIGHT, SSD1306_WHITE);
+
+  Display.setTextSize(1);
+  Display.setTextColor(SSD1306_BLACK);
+  Display.setCursor(2, 1);
+  Display.print(upperCaseMode ? "ABC" : "abc");
+  
+  char stats[10];
+  sprintf(stats, "%d/%d", getBufferLen(), BUFFER_SIZE);
+  int16_t smallFontWidth = 6; 
+  int16_t statsX = SCREEN_WIDTH - (strlen(stats) * smallFontWidth) - 2;
+  Display.setCursor(statsX, 1);
+  Display.print(stats);
+
+  Display.setTextSize(2);
+  Display.setTextColor(SSD1306_WHITE);
+  Display.setCursor(savedX, savedY);
 }
 
 Coord getTargetCursorPos(Direction direction) {

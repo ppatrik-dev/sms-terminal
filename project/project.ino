@@ -34,6 +34,8 @@ void setup() {
 void loop() {
   now = millis();
 
+  drawHeader();
+
   Key key = scanKeypad();
 
   if (key != KEY_NONE) {
@@ -55,5 +57,6 @@ void loop() {
         break;
     }
   }
+
   updateCursor();
 }

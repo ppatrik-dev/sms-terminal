@@ -26,6 +26,7 @@
 // Text font size config
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 16
+#define HEADER_HEIGHT 10
 
 // Delay values for cursor
 #define CURSOR_BLINK_DELAY 750
@@ -40,7 +41,7 @@
 #define MAX_X_POS ((CHARS_PER_LINE - 1) * FONT_WIDTH)
 
 // Coord limit values for y
-#define MIN_Y_POS 0
+#define MIN_Y_POS FONT_HEIGHT
 #define MAX_Y_POS ((TOTAL_LINES - 1) * FONT_HEIGHT)
 
 typedef enum {
@@ -57,6 +58,12 @@ typedef struct {
  * 
  */
 void initDisplay();
+
+/**
+ * @brief 
+ * 
+ */
+void drawHeader();
 
 /**
  * @brief

@@ -51,6 +51,7 @@ const char* KeySymbols[] = {
 
 // Upper case mode active flag 
 bool upperCaseMode = false;
+bool 
 
 // Multitap index of key character
 Key lastKey = KEY_NONE;
@@ -93,6 +94,8 @@ Key scanKeypad() {
         uint64_t pressStartTime = millis();
 
         while(digitalRead(RowPins[r]) == LOW) {
+          drawHeader();
+
           uint64_t loopTime = millis();
 
           if (loopTime - pressStartTime > LONG_PRESS_DELAY) {
