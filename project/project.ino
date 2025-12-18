@@ -55,6 +55,7 @@ void loop() {
         handleDelete(now);
         break;
     }
+
     drawHeader();
   }
 

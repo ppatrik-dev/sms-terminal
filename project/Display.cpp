@@ -101,6 +101,8 @@ void drawHeader() {
   Display.setTextSize(2);
   Display.setTextColor(SSD1306_WHITE);
   Display.setCursor(savedX, savedY);
+
+  Display.display();
 }
 
 void drawMessage() {
@@ -202,7 +204,6 @@ void drawChar(char ch, bool isCycle) {
     Display.print(ch);
   }
   
-  drawHeader(); // Update stats
   Display.display();
 }
 
@@ -283,7 +284,6 @@ void deleteChar(uint64_t time) {
 
     Display.setCursor(newX, newY);
 
-    drawHeader(); // Update character count
     drawCursor(true);
     Display.display();
     

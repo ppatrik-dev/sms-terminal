@@ -95,8 +95,6 @@ Key scanKeypad() {
         uint64_t pressStartTime = millis();
 
         while(digitalRead(RowPins[r]) == LOW) {
-          drawHeader();
-
           uint64_t loopTime = millis();
 
           if (loopTime - pressStartTime > LONG_PRESS_DELAY) {
@@ -255,5 +253,6 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
     
     default:
       break;
-    }
+  }
+  drawHeader();
 }
