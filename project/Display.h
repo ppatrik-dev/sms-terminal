@@ -27,6 +27,22 @@
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 16
 
+// Delay values for cursor
+#define CURSOR_BLINK_DELAY 750
+#define CURSOR_MOVE_DELAY 250
+
+// Number of characters on one line and total lines
+#define CHARS_PER_LINE (SCREEN_WIDTH / FONT_WIDTH)
+#define TOTAL_LINES (SCREEN_HEIGHT / FONT_HEIGHT)
+
+// Coord limit values for x
+#define MIN_X_POS 0
+#define MAX_X_POS ((CHARS_PER_LINE - 1) * FONT_WIDTH)
+
+// Coord limit values for y
+#define MIN_Y_POS 0
+#define MAX_Y_POS ((TOTAL_LINES - 1) * FONT_HEIGHT)
+
 typedef enum {
     UP, LEFT, RIGHT, DOWN
 } Direction;

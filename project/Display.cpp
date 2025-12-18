@@ -19,16 +19,12 @@
 #include "Display.h"
 #include "Buffer.h"
 
-uint64_t lastBlinkTime = 0;
-bool cursorVisible = false;
-bool cursorEnabled = true;
-const uint32_t BLINK_INTERVAL = 750;
-
-// Delay for cursor move
-uint64_t moveSpeedDelay = 250;
-
 extern uint64_t now;
 extern uint8_t bufferIndex;
+
+bool cursorVisible = false;
+bool cursorEnabled = true;
+uint64_t lastBlinkTime = 0;
 
 Adafruit_SSD1306 Display(
   SCREEN_WIDTH,
@@ -39,15 +35,6 @@ Adafruit_SSD1306 Display(
   SPI_RST,
   SPI_CS
 );
-
-const uint16_t CHARS_PER_LINE = SCREEN_WIDTH / FONT_WIDTH;
-const uint16_t TOTAL_LINES = SCREEN_HEIGHT / FONT_HEIGHT;
-
-const int16_t MIN_X_POS = 0;
-const int16_t MAX_X_POS = (CHARS_PER_LINE - 1) * FONT_WIDTH;
-
-const int16_t MIN_Y_POS = 0;
-const int16_t MAX_Y_POS = (TOTAL_LINES - 1) * FONT_HEIGHT;
 
 void initDisplay() {
   Display.begin(SSD1306_SWITCHCAPVCC);
@@ -154,7 +141,7 @@ void drawCursor(bool visible) {
 }
 
 void updateCursor() {
-  if (now - lastBlinkTime >= BLINK_INTERVAL && cursorEnabled) {
+  if (now - lastBlinkTime >= CURSOR_BLINK_DELAY && cursorEnabled) {
     cursorVisible = !cursorVisible;
     drawCursor(cursorVisible);
     lastBlinkTime = now;
@@ -196,7 +183,7 @@ void deleteChar(uint64_t time) {
 void moveUp(uint64_t time) {
   // Check if we are at least on the second line
   if (bufferIndex >= CHARS_PER_LINE) {
-    if (time - lastBlinkTime > moveSpeedDelay) {
+    if (time - lastBlinkTime > CURSOR_MOVE_DELAY) {
       drawCursor(false);
       
       // Move index back by one full row
@@ -217,7 +204,7 @@ void moveUp(uint64_t time) {
 
 void moveLeft(uint64_t time) {
   if (bufferIndex > 0) {
-    if (time - lastBlinkTime > moveSpeedDelay) {
+    if (time - lastBlinkTime > CURSOR_MOVE_DELAY) {
       drawCursor(false);
       bufferIndex--;
 
@@ -236,7 +223,7 @@ void moveLeft(uint64_t time) {
 
 void moveRight(uint64_t time) {
   if (bufferIndex < getBufferLen()) {
-    if ((time - lastBlinkTime > moveSpeedDelay)) {
+    if ((time - lastBlinkTime > CURSOR_MOVE_DELAY)) {
       drawCursor(false);
       bufferIndex++;
 
@@ -256,7 +243,7 @@ void moveRight(uint64_t time) {
 void moveDown(uint64_t time) {
   // Check if moving down keeps us within the buffer length
   if (bufferIndex + CHARS_PER_LINE <= getBufferLen()) {
-    if (time - lastBlinkTime > moveSpeedDelay) {
+    if (time - lastBlinkTime > CURSOR_MOVE_DELAY) {
       drawCursor(false);
       
       // Move index forward by one full row

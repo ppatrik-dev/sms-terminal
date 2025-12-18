@@ -9,10 +9,12 @@
  * 
  */
 
+#include <Arduino.h>
+
 #include <string.h>
 #include <ctype.h>
 #include <stdint.h>
-#include <Arduino.h>
+
 #include "Keypad.h"
 #include "Display.h"
 
@@ -50,26 +52,14 @@ const char* KeySymbols[] = {
 // Upper case mode active flag 
 bool upperCaseMode = false;
 
-// Pressed key value
-// Key pressKey = KEY_NONE;
-
 // Multitap index of key character
 Key lastKey = KEY_NONE;
 
 // Current key symbol index
 uint8_t symbolIndex = 0;
 
-// Key multitap delay
-uint16_t multitapDelay = 500;
-
 // Last key press time
 uint64_t lastPressTime = 0;
-
-// Delay for long press
-uint64_t longPressDelay = 500;
-
-// Delete hold delay
-uint64_t deleteHoldDelay = 250;
 
 // Last delete time
 uint64_t lastDeleteTime = 0;
@@ -90,7 +80,7 @@ void initKeypad() {
 Key scanKeypad() {
   uint64_t currentMillis = now;
 
-  if (currentMillis - lastPressTime >= multitapDelay) {
+  if (currentMillis - lastPressTime >= MULTITAP_DELAY) {
     enableCursor();
   }
 
@@ -105,7 +95,7 @@ Key scanKeypad() {
         while(digitalRead(RowPins[r]) == LOW) {
           uint64_t loopTime = millis();
 
-          if (loopTime - pressStartTime > longPressDelay) {
+          if (loopTime - pressStartTime > LONG_PRESS_DELAY) {
             handleLongPress(Keypad[r][c], loopTime);
             longPressTriggered = true;
           }
@@ -153,7 +143,7 @@ void displayKey(Key key, bool isCycle) {
 }
 
 void handleKey(Key key) {
-  if (key == lastKey && (now - lastPressTime < multitapDelay)) {
+  if (key == lastKey && (now - lastPressTime < MULTITAP_DELAY)) {
     disableCursor();
 
     size_t symbolsLen = strlen(KeySymbols[key]);
@@ -210,7 +200,7 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
       break;
 
     case KEY_H:
-      if (currentLoopTime - lastDeleteTime > deleteHoldDelay) {
+      if (currentLoopTime - lastDeleteTime > DELETE_SPEED_DELAY) {
         handleDelete(currentLoopTime);
       }
       break;

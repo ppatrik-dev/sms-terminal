@@ -15,6 +15,15 @@
 #define KEYPAD_COLS 3
 #define KEYPAD_ROWS 4
 
+// Key multitap delay
+#define MULTITAP_DELAY 500
+
+// Delay for long press
+#define LONG_PRESS_DELAY 500
+
+// Delete hold delay
+#define DELETE_SPEED_DELAY 250
+
 /**
  * @brief 
  * 
