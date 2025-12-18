@@ -247,10 +247,6 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
       moveDown(currentLoopTime);
       break;
 
-    case KEY_S:
-      drawMessage();
-      break;
-
     case KEY_H:
       if (currentLoopTime - lastDeleteTime > DELETE_SPEED_DELAY) {
         handleDelete(currentLoopTime);

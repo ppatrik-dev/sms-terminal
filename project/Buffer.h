@@ -40,6 +40,20 @@ char getBufferChar();
  */
 void setBufferChar(char ch);
 
+
+/**
+ * @brief 
+ * 
+ * @param index 
+ */
+void removeBufferCharOnIndex(uint8_t index);
+
+/**
+ * @brief 
+ * 
+ */
+void removeBufferChar();
+
 /**
  * @brief 
  * 

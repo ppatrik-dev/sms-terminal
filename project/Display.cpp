@@ -251,44 +251,42 @@ void deleteChar(uint64_t time) {
   if (bufferIndex > 0) { 
     drawCursor(false);
 
-    bufferIndex--;
-    setBufferChar(MESSAGE_END);
-
-    int targetRow = bufferIndex / CHARS_PER_LINE;
-    
-    // --- REVERSE PAGE FLIP (Deleting) ---
-    if (targetRow < scrollRow) {
-      // Jump back one full page
-      if (scrollRow >= VISIBLE_LINES) scrollRow -= VISIBLE_LINES;
-      else scrollRow = 0;
-
-      drawMessage();
-      
-      // Calculate cursor position on the previous line
-      int16_t newX = (bufferIndex % CHARS_PER_LINE) * FONT_WIDTH;
-      
-      // If we flipped page back, we are deleting the last char of the page
-      // But we need to find the correct Y. Since we flipped, targetRow
-      // is relative to the new scrollRow.
-      // E.g. scrollRow=0, targetRow=2 (bottom line).
-      int16_t relativeRow = targetRow - scrollRow;
-      int16_t newY = MIN_Y_POS + (relativeRow * FONT_HEIGHT);
-
-      Display.setCursor(newX, newY);
+    if (bufferIndex == getBufferLen()) {
+      bufferIndex--;
+      setBufferChar(MESSAGE_END);
     }
     else {
-      // Standard backspace on same page
-      Coord crs = getTargetCursorPos(MOVE_LEFT);
-      Display.setCursor(crs.x, crs.y);
-      
-      Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
-      Display.print(' '); 
-      Display.setCursor(crs.x, crs.y);
+      removeBufferChar();
+    }
+    
+    int targetRow = bufferIndex / CHARS_PER_LINE;
+    
+    // Check if we backspaced onto a previous page
+    if (targetRow < scrollRow) {
+       // Reverse Page Flip Logic
+       if (scrollRow >= VISIBLE_LINES) scrollRow -= VISIBLE_LINES;
+       else scrollRow = 0;
     }
 
-    drawHeader();
+    // Redraw the screen to show the shifted text
+    drawMessage(); 
+
+    // 4. Place Cursor correctly
+    // Calculate new cursor position based on the new bufferIndex
+    int16_t relativeRow = targetRow - scrollRow;
+    
+    // Safety clamp if scrolling math gets weird
+    if (relativeRow < 0) relativeRow = 0; 
+    
+    int16_t newX = (bufferIndex % CHARS_PER_LINE) * FONT_WIDTH;
+    int16_t newY = MIN_Y_POS + (relativeRow * FONT_HEIGHT);
+
+    Display.setCursor(newX, newY);
+
+    drawHeader(); // Update character count
     drawCursor(true);
     Display.display();
+    
     lastBlinkTime = time;
   }
 }
