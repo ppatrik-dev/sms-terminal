@@ -34,6 +34,10 @@ typedef enum {
   KEY_S, KEY_H, KEY_NONE = -1
 } Key;
 
+typedef enum {
+  MODE_LOWER, MODE_UPPER, MODE_SMART
+} Mode;
+
 /**
  * @brief 
  * 
@@ -46,6 +50,14 @@ void initKeypad();
  * @return Key 
  */
 Key scanKeypad();
+
+/**
+ * @brief
+ * 
+ * @param key 
+ * @return const char* 
+ */
+const char* getSymbols(Key key);
 
 /**
  * @brief Get the Key Char object
@@ -71,10 +83,17 @@ void displayKey(Key key, bool isCycle);
 void handleKey(Key key);
 
 /**
+ * @brief Get the Mode object
+ * 
+ * @return Mode 
+ */
+Mode getMode();
+
+/**
  * @brief 
  * 
  */
-void changeCaseMode();
+void switchMode();
 
 /**
  * @brief 

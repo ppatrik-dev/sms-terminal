@@ -17,8 +17,10 @@
 
 #include "Keypad.h"
 #include "Display.h"
+#include "Buffer.h"
 
 extern uint64_t now;
+extern uint8_t bufferIndex;
 
 // GPIO columns pins                  C1, C2, C3
 const uint8_t ColPins[KEYPAD_COLS] = {25, 26, 13};
@@ -50,8 +52,7 @@ const char* KeySymbols[] = {
 };
 
 // Upper case mode active flag 
-bool upperCaseMode = false;
-bool 
+Mode currentMode = MODE_SMART;
 
 // Multitap index of key character
 Key lastKey = KEY_NONE;
@@ -122,12 +123,44 @@ Key scanKeypad() {
   return KEY_NONE;
 }
 
-char getKeyChar(Key key) {
+const char* getSymbols(Key key) {
   if (key < KEY_0 || key > KEY_9) {
+    return NULL;
+  }
+
+  return KeySymbols[key];
+}
+
+char getKeyChar(Key key) {
+  const char *symbols = getSymbols(key);
+
+  if (symbols == NULL) {
     return KEY_NONE;
   }
 
-  return KeySymbols[key][symbolIndex];
+  return symbols[symbolIndex];
+}
+
+char getSmartCase(char input) {
+  if (isdigit(input)) {
+    return input;
+  }
+
+  if (bufferIndex == 0) {
+    return toupper(input);
+  }
+
+  if (bufferIndex >= 2) {
+    const char prevChar = getCharByIndex(bufferIndex - 1);
+    const char prevPrevChar = getCharByIndex(bufferIndex - 2);
+
+    if (prevChar == ' ' && 
+        (prevPrevChar == '.' || prevPrevChar == '!' || prevPrevChar == '?')) {
+      return toupper(input);
+    }
+  }
+
+  return tolower(input);
 }
 
 /**
@@ -136,13 +169,19 @@ char getKeyChar(Key key) {
  * @param key 
  */
 void displayKey(Key key, bool isCycle) {
-  char ch = getKeyChar(key);
+  char input = getKeyChar(key);
 
-  if (upperCaseMode && !isdigit(ch)) {
-    ch = (char)toupper(ch);
+  if (isCycle) bufferIndex--;
+
+  if (currentMode == MODE_SMART) {
+    input = getSmartCase(input);
   }
 
-  drawChar(ch, isCycle);
+  if (currentMode == MODE_UPPER && !isdigit(input)) {
+    input = toupper(input);
+  }
+
+  drawChar(input, isCycle);
 }
 
 void handleKey(Key key) {
@@ -167,8 +206,14 @@ void handleKey(Key key) {
   lastPressTime = now;
 }
 
-void changeCaseMode() {
-  upperCaseMode = !upperCaseMode;
+Mode getMode() {
+  return currentMode;
+}
+
+void switchMode() {
+  int next = (int)currentMode + 1;
+  if (next > 2) next = 0;
+  currentMode = (Mode)next;
 }
 
 void handleDelete(uint64_t time) {

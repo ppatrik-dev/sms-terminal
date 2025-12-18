@@ -19,10 +19,11 @@
 
 #include "Display.h"
 #include "Buffer.h"
+#include "Keypad.h"
 
 extern uint64_t now;
 extern uint8_t bufferIndex;
-extern bool upperCaseMode;
+extern bool currentMode;
 
 bool cursorVisible = false;
 bool cursorEnabled = true;
@@ -52,18 +53,30 @@ void drawHeader() {
   int16_t savedX = Display.getCursorX();
   int16_t savedY = Display.getCursorY();
 
-  Display.fillRect(0, 0, SCREEN_WIDTH, HEADER_HEIGHT, SSD1306_WHITE);
+  Display.fillRect(0, 0, SCREEN_WIDTH, HEADER_HEIGHT, SSD1306_BLACK);
 
   Display.setTextSize(1);
-  Display.setTextColor(SSD1306_BLACK);
-  Display.setCursor(2, 1);
-  Display.print(upperCaseMode ? "ABC" : "abc");
+  Display.setCursor(2, 0);
+  Mode mode = getMode();
+  switch (mode) {
+    case MODE_LOWER:
+      Display.print("abc");
+      break;
+
+    case MODE_UPPER:
+      Display.print("ABC");
+      break;
+    
+    case MODE_SMART:
+      Display.print("Abc");
+      break;
+  }
   
-  char stats[10];
-  sprintf(stats, "%d/%d", getBufferLen(), BUFFER_SIZE);
+  char stats[5];
+  sprintf(stats, "%d", MESSAGE_SIZE - getBufferLen());
   int16_t smallFontWidth = 6; 
   int16_t statsX = SCREEN_WIDTH - (strlen(stats) * smallFontWidth) - 2;
-  Display.setCursor(statsX, 1);
+  Display.setCursor(statsX, 0);
   Display.print(stats);
 
   Display.setTextSize(2);
@@ -127,8 +140,6 @@ void drawChar(char ch, bool isCycle) {
     int16_t targetY = crs.y;
 
     Display.setCursor(targetX, targetY);
-
-    bufferIndex--;
   }
 
   setBufferChar(ch);

@@ -41,7 +41,7 @@
 #define MAX_X_POS ((CHARS_PER_LINE - 1) * FONT_WIDTH)
 
 // Coord limit values for y
-#define MIN_Y_POS FONT_HEIGHT
+#define MIN_Y_POS HEADER_HEIGHT
 #define MAX_Y_POS ((TOTAL_LINES - 1) * FONT_HEIGHT)
 
 typedef enum {

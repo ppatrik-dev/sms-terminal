@@ -34,10 +34,10 @@ void setup() {
 void loop() {
   now = millis();
 
-  drawHeader();
-
   Key key = scanKeypad();
-
+  
+  drawHeader();
+  
   if (key != KEY_NONE) {
     switch (key) {
       case KEY_0: case KEY_1: 
@@ -49,7 +49,7 @@ void loop() {
         break;
 
       case KEY_S:
-        changeCaseMode();
+        switchMode();
         break;
 
       case KEY_H:

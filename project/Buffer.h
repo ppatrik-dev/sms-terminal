@@ -13,10 +13,18 @@
 #define BUFFER_H
 
 // Message buffer length
-#define BUFFER_SIZE 255
+#define MESSAGE_SIZE 160
 
 // Message end symbol
 #define MESSAGE_END '\0'
+
+/**
+ * @brief
+ * 
+ * @param index 
+ * @return char 
+ */
+char getCharByIndex(uint8_t index);
 
 /**
  * @brief 

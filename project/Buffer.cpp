@@ -13,19 +13,23 @@
 #include <string.h>
 #include "Buffer.h"
 
-char Buffer[BUFFER_SIZE] = {'\0'};
+char Buffer[MESSAGE_SIZE + 1] = {'\0'};
 uint8_t bufferIndex = 0;
 
 char getBufferChar() {
-  if (bufferIndex >= 0 && bufferIndex < BUFFER_SIZE) {
-    return Buffer[bufferIndex];
+  return getCharByIndex(bufferIndex);
+}
+
+char getCharByIndex(uint8_t index) {
+  if (index >= 0 && index < MESSAGE_SIZE) {
+    return Buffer[index];
   }
 
   return MESSAGE_END;
 }
 
 void setBufferChar(char ch) {
-  if (bufferIndex >= 0 && bufferIndex < BUFFER_SIZE) {
+  if (bufferIndex >= 0 && bufferIndex < MESSAGE_SIZE) {
     Buffer[bufferIndex] = ch;
   }
 }
