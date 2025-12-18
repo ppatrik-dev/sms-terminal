@@ -57,10 +57,8 @@ void drawHeader() {
   Display.setTextSize(1);
   Display.setTextColor(SSD1306_WHITE); // Ensure text is white on black bar
   
-  // 1. LEFT: Mode Indicator (Start at X=2)
-  // Y=1 centers the 8px font inside the 10px bar
   Display.setCursor(2, 1); 
-  
+
   CaseMode mode = getCaseMode();
   switch (mode) {
     case MODE_LOWER: Display.print("abc"); break;
@@ -76,7 +74,7 @@ void drawHeader() {
   sprintf(line, "Line %d", currentLine);
   
   // Calculate width: Length * 6px (standard width for size 1)
-  int16_t textWidth = strlen(line) * 6;
+  int16_t textWidth = strlen(line) * HEADER_FONT_WIDTH;
   
   // Center math: (Screen - Text) / 2
   int16_t lineX = (SCREEN_WIDTH - textWidth) / 2;
@@ -92,7 +90,7 @@ void drawHeader() {
   sprintf(stats, "%d/%d", remaining, page);
   
   // Align right: ScreenWidth - TextWidth - Margin(2)
-  int16_t statsX = SCREEN_WIDTH - (strlen(stats) * 6) - 2;
+  int16_t statsX = SCREEN_WIDTH - (strlen(stats) * HEADER_FONT_WIDTH) - 2;
   
   Display.setCursor(statsX, 1);
   Display.print(stats);
@@ -203,7 +201,7 @@ void drawChar(char ch, bool isCycle) {
     Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
     Display.print(ch);
   }
-  
+
   Display.display();
 }
 
@@ -215,6 +213,7 @@ void drawCursor(bool visible) {
   if (targetX + FONT_WIDTH > SCREEN_WIDTH) {
     targetX = MIN_X_POS;
     targetY += FONT_HEIGHT;
+    Display.setCursor(targetX, targetY);
   }
 
   uint8_t color = visible ? SSD1306_WHITE : SSD1306_BLACK;
@@ -415,4 +414,79 @@ void moveDown(uint64_t time) {
     drawCursor(true);
     lastBlinkTime = time;
   }
+}
+
+void showHelp(uint64_t time) {
+  // 1. Hide cursor and clear text area
+  drawCursor(false);
+  Display.fillRect(0, MIN_Y_POS, SCREEN_WIDTH, SCREEN_HEIGHT - MIN_Y_POS, SSD1306_BLACK);
+
+  Display.setTextSize(1);
+  Display.setTextColor(SSD1306_WHITE);
+  
+  // Layout Constants
+  int16_t y = MIN_Y_POS + 4; // Start with a bit of top padding
+  int16_t lineStep = 10;     // Vertical spacing
+  
+  int16_t col1_Key = 4;      // Left Column Key
+  int16_t col1_Act = 16;     // Left Column Action
+  
+  int16_t col2_Key = 68;     // Right Column Key
+  int16_t col2_Act = 80;     // Right Column Action
+
+  // --- ROW 1: Symbols / Up ---
+  Display.setCursor(col1_Key, y); Display.print("0");
+  Display.setCursor(col1_Act, y); Display.print(": Space");
+  
+  Display.setCursor(col2_Key, y); Display.print("2");
+  Display.setCursor(col2_Act, y); Display.print(": UP");
+  y += lineStep;
+  
+  // --- ROW 2: Space / Left ---
+  Display.setCursor(col1_Key, y); Display.print("1");
+  Display.setCursor(col1_Act, y); Display.print(": .,?!");
+  
+  Display.setCursor(col2_Key, y); Display.print("4");
+  Display.setCursor(col2_Act, y); Display.print(": LEFT");
+  y += lineStep;
+
+  // --- ROW 3: Mode / Right ---
+  Display.setCursor(col1_Key, y); Display.print("*");
+  Display.setCursor(col1_Act, y); Display.print(": Mode");
+
+  Display.setCursor(col2_Key, y); Display.print("6");
+  Display.setCursor(col2_Act, y); Display.print(": RIGHT");
+  y += lineStep;
+
+  // --- ROW 4: Delete / Down ---
+  Display.setCursor(col1_Key, y); Display.print("#");
+  Display.setCursor(col1_Act, y); Display.print(": Del");
+
+  Display.setCursor(col2_Key, y); Display.print("8");
+  Display.setCursor(col2_Act, y); Display.print(": DOWN");
+
+  // Optional: Vertical Divider Line
+  Display.drawFastVLine(62, MIN_Y_POS + 2, 40, SSD1306_WHITE);
+
+  Display.display();
+}
+
+void hideHelp(uint64_t time) {
+  // 1. Redraw the text content (This restores the view based on scrollRow)
+  drawMessage();
+
+  // 2. Recalculate where the cursor should be based on bufferIndex
+  // Calculate relative row (0, 1, or 2) on the screen
+  int currentAbsRow = bufferIndex / CHARS_PER_LINE;
+  int relativeRow = currentAbsRow - scrollRow;
+  
+  // Calculate X position
+  int col = bufferIndex % CHARS_PER_LINE;
+  int16_t x = MIN_X_POS + (col * FONT_WIDTH);
+  int16_t y = MIN_Y_POS + (relativeRow * FONT_HEIGHT);
+
+  // 3. Restore cursor state
+  Display.setCursor(x, y);
+  drawCursor(true); // Make it visible again immediately
+  lastBlinkTime = time;
 }

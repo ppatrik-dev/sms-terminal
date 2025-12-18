@@ -21,8 +21,10 @@
 // Delay for long press
 #define LONG_PRESS_DELAY 500
 
+#define MODE_SWITCH_DELAY 500
+
 // Delete hold delay
-#define DELETE_SPEED_DELAY 250
+#define DELETE_SPEED_DELAY 200
 
 /**
  * @brief 

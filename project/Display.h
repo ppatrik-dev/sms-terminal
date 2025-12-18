@@ -28,19 +28,19 @@
 #define FONT_HEIGHT 16
 
 #define HEADER_HEIGHT 10
-#define HEADER_FONT_HEIGHT 6
+#define HEADER_FONT_WIDTH 6
+#define HEADER_FONT_HEIGHT 8
 
 // Delay values for cursor
-#define CURSOR_BLINK_DELAY 750
-#define CURSOR_MOVE_DELAY 250
+#define CURSOR_BLINK_DELAY 700
+#define CURSOR_MOVE_DELAY 200
 
 // Number of characters on one line and total lines
 #define CHARS_PER_LINE (SCREEN_WIDTH / FONT_WIDTH)
 #define VISIBLE_LINES ((SCREEN_HEIGHT / FONT_HEIGHT) - 1)
 
-// Coord limit values for x
 #define MIN_X_POS 0
-#define MAX_X_POS ((CHARS_PER_LINE - 1) * FONT_WIDTH)
+#define MAX_X_POS (MIN_X_POS + ((CHARS_PER_LINE - 1) * FONT_WIDTH))
 
 // Coord limit values for y
 #define MIN_Y_POS FONT_HEIGHT
@@ -143,5 +143,17 @@ void moveRight(uint64_t time);
  * 
  */
 void moveDown(uint64_t time);
+
+/**
+ * @brief 
+ * 
+ */
+void showHelp(uint64_t time);
+
+/**
+ * @brief 
+ * 
+ */
+void hideHelp(uint64_t time);
 
 #endif

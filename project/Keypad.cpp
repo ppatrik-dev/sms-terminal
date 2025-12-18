@@ -63,6 +63,9 @@ uint8_t symbolIndex = 0;
 // Last key press time
 uint64_t lastPressTime = 0;
 
+// Last mode switch time
+// uint64_t lastSwitchTime = 0;
+
 // Last delete time
 uint64_t lastDeleteTime = 0;
 
@@ -102,12 +105,16 @@ Key scanKeypad() {
             longPressTriggered = true;
           }
 
-          delay(10);
+          delay(20);
         }
 
+        uint64_t pressEndTime = millis();
         digitalWrite(ColPins[c], HIGH);
 
         if (longPressTriggered) {
+          if (Keypad[r][c] == KEY_S) {
+            hideHelp(pressEndTime);
+          }
           return KEY_NONE;
         }
         else {
@@ -212,6 +219,8 @@ void switchCaseMode() {
   int next = (int)activeCaseMode + 1;
   if (next > 2) next = 0;
   activeCaseMode = (CaseMode)next;
+
+  // lastSwitchTime = time;
 }
 
 void handleDelete(uint64_t time) {
@@ -245,6 +254,10 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
       moveDown(currentLoopTime);
       break;
 
+    case KEY_S:
+      showHelp(currentLoopTime);
+      break;
+
     case KEY_H:
       if (currentLoopTime - lastDeleteTime > DELETE_SPEED_DELAY) {
         handleDelete(currentLoopTime);
@@ -254,5 +267,6 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
     default:
       break;
   }
+
   drawHeader();
 }
