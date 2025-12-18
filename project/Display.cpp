@@ -4,10 +4,8 @@
  * @brief 
  * @version 0.1
  * @date 2025-12-16
- * 
- * @copyright Copyright (c) 2025
- * 
- */
+ * * @copyright Copyright (c) 2025
+ * */
 
 #include <SPI.h>
 #include <Adafruit_GFX.h>
@@ -23,11 +21,11 @@
 
 extern uint64_t now;
 extern uint8_t bufferIndex;
-extern bool currentMode;
 
 bool cursorVisible = false;
 bool cursorEnabled = true;
 uint64_t lastBlinkTime = 0;
+uint16_t scrollRow = 0;
 
 Adafruit_SSD1306 Display(
   SCREEN_WIDTH,
@@ -53,47 +51,88 @@ void drawHeader() {
   int16_t savedX = Display.getCursorX();
   int16_t savedY = Display.getCursorY();
 
+  // Clear header area (Black bar)
   Display.fillRect(0, 0, SCREEN_WIDTH, HEADER_HEIGHT, SSD1306_BLACK);
 
   Display.setTextSize(1);
-  Display.setCursor(2, 0);
-  Mode mode = getMode();
-  switch (mode) {
-    case MODE_LOWER:
-      Display.print("abc");
-      break;
-
-    case MODE_UPPER:
-      Display.print("ABC");
-      break;
-    
-    case MODE_SMART:
-      Display.print("Abc");
-      break;
-  }
+  Display.setTextColor(SSD1306_WHITE); // Ensure text is white on black bar
   
-  char stats[5];
-  sprintf(stats, "%d", MESSAGE_SIZE - getBufferLen());
-  int16_t smallFontWidth = 6; 
-  int16_t statsX = SCREEN_WIDTH - (strlen(stats) * smallFontWidth) - 2;
-  Display.setCursor(statsX, 0);
+  // 1. LEFT: Mode Indicator (Start at X=2)
+  // Y=1 centers the 8px font inside the 10px bar
+  Display.setCursor(2, 1); 
+  
+  CaseMode mode = getCaseMode();
+  switch (mode) {
+    case MODE_LOWER: Display.print("abc"); break;
+    case MODE_UPPER: Display.print("ABC"); break;
+    case MODE_SMART: Display.print("Abc"); break;
+    default:         Display.print("???"); break;
+  }
+
+  // 2. CENTER: Line Info
+  char line[15];
+  // Calculate current line (1-based)
+  int currentLine = (bufferIndex / CHARS_PER_LINE) + 1;
+  sprintf(line, "Line %d", currentLine);
+  
+  // Calculate width: Length * 6px (standard width for size 1)
+  int16_t textWidth = strlen(line) * 6;
+  
+  // Center math: (Screen - Text) / 2
+  int16_t lineX = (SCREEN_WIDTH - textWidth) / 2;
+  
+  Display.setCursor(lineX, 1);
+  Display.print(line);
+  
+  // 3. RIGHT: Stats (Remaining / Page)
+  char stats[15];
+  int remaining = MESSAGE_SIZE - getBufferLen();
+  int page = (scrollRow / VISIBLE_LINES) + 1;
+  
+  sprintf(stats, "%d/%d", remaining, page);
+  
+  // Align right: ScreenWidth - TextWidth - Margin(2)
+  int16_t statsX = SCREEN_WIDTH - (strlen(stats) * 6) - 2;
+  
+  Display.setCursor(statsX, 1);
   Display.print(stats);
 
+  // Restore State
   Display.setTextSize(2);
   Display.setTextColor(SSD1306_WHITE);
   Display.setCursor(savedX, savedY);
 }
 
-Coord getTargetCursorPos(Direction direction) {
+void drawMessage() {
+  // Clear only the text area
+  Display.fillRect(MIN_X_POS, MIN_Y_POS, SCREEN_WIDTH, SCREEN_HEIGHT - MIN_Y_POS, SSD1306_BLACK);
+  
+  int startIdx = scrollRow * CHARS_PER_LINE;
+  int maxVisibleChars = VISIBLE_LINES * CHARS_PER_LINE;
+
+  Display.setCursor(MIN_X_POS, MIN_Y_POS);
+  Display.setTextColor(SSD1306_WHITE);
+
+  for (int i = 0; i < maxVisibleChars; i++) {
+    int bufferPos = startIdx + i;
+
+    if (bufferPos >= getBufferLen()) break;
+
+    char c = getBufferCharByIndex(bufferPos);
+    Display.print(c);
+  }
+}
+
+Coord getTargetCursorPos(Move move) {
   int16_t x = Display.getCursorX();
   int16_t y = Display.getCursorY();
 
-  switch (direction) {
-    case UP:
+  switch (move) {
+    case MOVE_UP:
       y -= FONT_HEIGHT;
       break;
 
-    case LEFT:
+    case MOVE_LEFT:
       if (x - FONT_WIDTH < MIN_X_POS) {
         // Wrap to end of previous line
         x = MAX_X_POS;
@@ -103,7 +142,7 @@ Coord getTargetCursorPos(Direction direction) {
       }
       break;
 
-    case RIGHT:
+    case MOVE_RIGHT:
       if (x + FONT_WIDTH >= SCREEN_WIDTH) {
         // Wrap to start of next line
         x = MIN_X_POS;
@@ -113,13 +152,15 @@ Coord getTargetCursorPos(Direction direction) {
       }
       break;
 
-    case DOWN:
+    case MOVE_DOWN:
       y += FONT_HEIGHT;
+      break; // Added missing break
     
     default:
       break;
   }
 
+  // Clamp values to valid screen area
   if (y < MIN_Y_POS) {
     x = MIN_X_POS;
     y = MIN_Y_POS;
@@ -134,19 +175,34 @@ Coord getTargetCursorPos(Direction direction) {
 
 
 void drawChar(char ch, bool isCycle) {
-  if (isCycle) {
-    Coord crs = getTargetCursorPos(LEFT);
-    int16_t targetX = crs.x;
-    int16_t targetY = crs.y;
+  if (getBufferLen() == MESSAGE_SIZE) return;
 
-    Display.setCursor(targetX, targetY);
+  if (isCycle) {
+    // Visually step back to overwrite
+    Coord crs = getTargetCursorPos(MOVE_LEFT);
+    Display.setCursor(crs.x, crs.y);
   }
 
   setBufferChar(ch);
   bufferIndex++;
+
+  int currentRow = bufferIndex / CHARS_PER_LINE;
+
+  // --- PAGE FLIP LOGIC (Typing) ---
+  // If we typed onto a line that is NOT visible on current page
+  if (currentRow >= scrollRow + VISIBLE_LINES) {
+    scrollRow += VISIBLE_LINES; // Jump to next page
+    drawMessage();
+    
+    // Cursor goes to TOP LEFT of new page
+    Display.setCursor(MIN_X_POS, MIN_Y_POS);
+  }
+  else {
+    Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+    Display.print(ch);
+  }
   
-  Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
-  Display.print(ch);
+  drawHeader(); // Update stats
   Display.display();
 }
 
@@ -154,15 +210,14 @@ void drawCursor(bool visible) {
   int16_t targetX = Display.getCursorX();
   int16_t targetY = Display.getCursorY();
 
+  // Handle visual wrapping for cursor rectangle
   if (targetX + FONT_WIDTH > SCREEN_WIDTH) {
     targetX = MIN_X_POS;
     targetY += FONT_HEIGHT;
-    Display.setCursor(targetX, targetY);
   }
 
   uint8_t color = visible ? SSD1306_WHITE : SSD1306_BLACK;
-
-  char ch = getBufferChar();
+  char ch = getBufferChar(); // Char at bufferIndex
   
   if (ch != MESSAGE_END) {
     Display.drawRect(targetX, targetY, FONT_WIDTH, FONT_HEIGHT, color);
@@ -172,7 +227,6 @@ void drawCursor(bool visible) {
   }
   
   Display.display();
-
   cursorVisible = visible;
 }
 
@@ -193,40 +247,75 @@ void disableCursor() {
   cursorEnabled = false;
 }
 
-/**
- * @brief 
- * 
- */
 void deleteChar(uint64_t time) {
-  if (bufferIndex == getBufferLen()) {
-    Coord crs = getTargetCursorPos(LEFT);
-    int16_t targetX = crs.x;
-    int16_t targetY = crs.y;
-
+  if (bufferIndex > 0) { 
     drawCursor(false);
 
     bufferIndex--;
     setBufferChar(MESSAGE_END);
 
-    Display.setCursor(targetX, targetY);
+    int targetRow = bufferIndex / CHARS_PER_LINE;
+    
+    // --- REVERSE PAGE FLIP (Deleting) ---
+    if (targetRow < scrollRow) {
+      // Jump back one full page
+      if (scrollRow >= VISIBLE_LINES) scrollRow -= VISIBLE_LINES;
+      else scrollRow = 0;
+
+      drawMessage();
+      
+      // Calculate cursor position on the previous line
+      int16_t newX = (bufferIndex % CHARS_PER_LINE) * FONT_WIDTH;
+      
+      // If we flipped page back, we are deleting the last char of the page
+      // But we need to find the correct Y. Since we flipped, targetRow
+      // is relative to the new scrollRow.
+      // E.g. scrollRow=0, targetRow=2 (bottom line).
+      int16_t relativeRow = targetRow - scrollRow;
+      int16_t newY = MIN_Y_POS + (relativeRow * FONT_HEIGHT);
+
+      Display.setCursor(newX, newY);
+    }
+    else {
+      // Standard backspace on same page
+      Coord crs = getTargetCursorPos(MOVE_LEFT);
+      Display.setCursor(crs.x, crs.y);
+      
+      Display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+      Display.print(' '); 
+      Display.setCursor(crs.x, crs.y);
+    }
+
+    drawHeader();
     drawCursor(true);
     Display.display();
-    
     lastBlinkTime = time;
   }
 }
 
 void moveUp(uint64_t time) {
-  // Check if we are at least on the second line
   if (bufferIndex >= CHARS_PER_LINE) {
     if (time - lastBlinkTime > CURSOR_MOVE_DELAY) {
       drawCursor(false);
-      
-      // Move index back by one full row
       bufferIndex -= CHARS_PER_LINE;
 
-      Coord crs = getTargetCursorPos(UP);
-      Display.setCursor(crs.x, crs.y);
+      int targetRow = bufferIndex / CHARS_PER_LINE;
+
+      // --- PAGE FLIP UP ---
+      if (targetRow < scrollRow) {
+        int16_t savedX = Display.getCursorX();
+
+        if (scrollRow >= VISIBLE_LINES) scrollRow -= VISIBLE_LINES;
+        else scrollRow = 0;
+
+        drawMessage();
+        // Cursor jumps to BOTTOM of previous page
+        Display.setCursor(savedX, MAX_Y_POS);
+      }
+      else {
+        Coord crs = getTargetCursorPos(MOVE_UP);
+        Display.setCursor(crs.x, crs.y);
+      }
 
       drawCursor(true);
       lastBlinkTime = time;
@@ -244,8 +333,20 @@ void moveLeft(uint64_t time) {
       drawCursor(false);
       bufferIndex--;
 
-      Coord crs = getTargetCursorPos(LEFT);
-      Display.setCursor(crs.x, crs.y);
+      int targetRow = bufferIndex / CHARS_PER_LINE;
+      
+      // --- PAGE FLIP BACK CHECK ---
+      if (targetRow < scrollRow) {
+        if (scrollRow >= VISIBLE_LINES) scrollRow -= VISIBLE_LINES;
+        else scrollRow = 0;
+
+        drawMessage();
+        Display.setCursor(MAX_X_POS, MAX_Y_POS); // Bottom Right of prev page
+      } 
+      else {
+        Coord crs = getTargetCursorPos(MOVE_LEFT);
+        Display.setCursor(crs.x, crs.y);
+      }
 
       drawCursor(true);
       lastBlinkTime = time;
@@ -262,9 +363,19 @@ void moveRight(uint64_t time) {
     if ((time - lastBlinkTime > CURSOR_MOVE_DELAY)) {
       drawCursor(false);
       bufferIndex++;
+      
+      int targetRow = bufferIndex / CHARS_PER_LINE;
 
-      Coord crs = getTargetCursorPos(RIGHT);
-      Display.setCursor(crs.x, crs.y);
+      // --- PAGE FLIP FORWARD CHECK ---
+      if (targetRow >= scrollRow + VISIBLE_LINES) {
+        scrollRow += VISIBLE_LINES;
+        drawMessage();
+        Display.setCursor(MIN_X_POS, MIN_Y_POS); // Top Left of new page
+      }
+      else {
+        Coord crs = getTargetCursorPos(MOVE_RIGHT);
+        Display.setCursor(crs.x, crs.y);
+      }
 
       drawCursor(true);
       lastBlinkTime = time;
@@ -277,16 +388,26 @@ void moveRight(uint64_t time) {
 }
 
 void moveDown(uint64_t time) {
-  // Check if moving down keeps us within the buffer length
   if (bufferIndex + CHARS_PER_LINE <= getBufferLen()) {
     if (time - lastBlinkTime > CURSOR_MOVE_DELAY) {
       drawCursor(false);
-      
-      // Move index forward by one full row
       bufferIndex += CHARS_PER_LINE;
 
-      Coord crs = getTargetCursorPos(DOWN);
-      Display.setCursor(crs.x, crs.y);
+      int targetRow = bufferIndex / CHARS_PER_LINE;
+
+      // --- PAGE FLIP DOWN ---
+      if (targetRow >= scrollRow + VISIBLE_LINES) {
+        int16_t savedX = Display.getCursorX();
+        
+        scrollRow += VISIBLE_LINES;
+        drawMessage();
+        // Cursor jumps to TOP of next page
+        Display.setCursor(savedX, MIN_Y_POS);
+      }
+      else {
+        Coord crs = getTargetCursorPos(MOVE_DOWN);
+        Display.setCursor(crs.x, crs.y);
+      }
 
       drawCursor(true);
       lastBlinkTime = time;

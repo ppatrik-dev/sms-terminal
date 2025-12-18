@@ -25,6 +25,7 @@ void setup() {
   Serial.begin(921600);
   initDisplay();
   initKeypad();
+  drawHeader();
 }
 
 /**
@@ -35,8 +36,6 @@ void loop() {
   now = millis();
 
   Key key = scanKeypad();
-  
-  drawHeader();
   
   if (key != KEY_NONE) {
     switch (key) {
@@ -49,13 +48,14 @@ void loop() {
         break;
 
       case KEY_S:
-        switchMode();
+        switchCaseMode();
         break;
 
       case KEY_H:
         handleDelete(now);
         break;
     }
+    drawHeader();
   }
 
   updateCursor();

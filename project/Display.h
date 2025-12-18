@@ -26,7 +26,9 @@
 // Text font size config
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 16
+
 #define HEADER_HEIGHT 10
+#define HEADER_FONT_HEIGHT 6
 
 // Delay values for cursor
 #define CURSOR_BLINK_DELAY 750
@@ -34,19 +36,19 @@
 
 // Number of characters on one line and total lines
 #define CHARS_PER_LINE (SCREEN_WIDTH / FONT_WIDTH)
-#define TOTAL_LINES (SCREEN_HEIGHT / FONT_HEIGHT)
+#define VISIBLE_LINES ((SCREEN_HEIGHT / FONT_HEIGHT) - 1)
 
 // Coord limit values for x
 #define MIN_X_POS 0
 #define MAX_X_POS ((CHARS_PER_LINE - 1) * FONT_WIDTH)
 
 // Coord limit values for y
-#define MIN_Y_POS HEADER_HEIGHT
-#define MAX_Y_POS ((TOTAL_LINES - 1) * FONT_HEIGHT)
+#define MIN_Y_POS FONT_HEIGHT
+#define MAX_Y_POS (VISIBLE_LINES * FONT_HEIGHT)
 
 typedef enum {
-    UP, LEFT, RIGHT, DOWN
-} Direction;
+  MOVE_UP, MOVE_LEFT, MOVE_RIGHT, MOVE_DOWN
+} Move;
 
 typedef struct {
   int16_t x;
@@ -66,12 +68,18 @@ void initDisplay();
 void drawHeader();
 
 /**
+ * @brief 
+ * 
+ */
+void drawMessage();
+
+/**
  * @brief
  * 
  * @param direction 
  * @return Coord 
  */
-Coord getTargetCursorPos(Direction direction);
+Coord getTargetCursorPos(Move move);
 
 /**
  * @brief 

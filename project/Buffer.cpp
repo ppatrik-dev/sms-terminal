@@ -17,10 +17,10 @@ char Buffer[MESSAGE_SIZE + 1] = {'\0'};
 uint8_t bufferIndex = 0;
 
 char getBufferChar() {
-  return getCharByIndex(bufferIndex);
+  return getBufferCharByIndex(bufferIndex);
 }
 
-char getCharByIndex(uint8_t index) {
+char getBufferCharByIndex(uint8_t index) {
   if (index >= 0 && index < MESSAGE_SIZE) {
     return Buffer[index];
   }

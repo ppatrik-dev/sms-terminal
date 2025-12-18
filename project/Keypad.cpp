@@ -52,7 +52,7 @@ const char* KeySymbols[] = {
 };
 
 // Upper case mode active flag 
-Mode currentMode = MODE_SMART;
+CaseMode activeCaseMode = MODE_SMART;
 
 // Multitap index of key character
 Key lastKey = KEY_NONE;
@@ -151,8 +151,8 @@ char getSmartCase(char input) {
   }
 
   if (bufferIndex >= 2) {
-    const char prevChar = getCharByIndex(bufferIndex - 1);
-    const char prevPrevChar = getCharByIndex(bufferIndex - 2);
+    const char prevChar = getBufferCharByIndex(bufferIndex - 1);
+    const char prevPrevChar = getBufferCharByIndex(bufferIndex - 2);
 
     if (prevChar == ' ' && 
         (prevPrevChar == '.' || prevPrevChar == '!' || prevPrevChar == '?')) {
@@ -171,13 +171,13 @@ char getSmartCase(char input) {
 void displayKey(Key key, bool isCycle) {
   char input = getKeyChar(key);
 
-  if (isCycle) bufferIndex--;
+  if (isCycle && bufferIndex > 0) bufferIndex--;
 
-  if (currentMode == MODE_SMART) {
+  if (activeCaseMode == MODE_SMART) {
     input = getSmartCase(input);
   }
 
-  if (currentMode == MODE_UPPER && !isdigit(input)) {
+  if (activeCaseMode == MODE_UPPER && !isdigit(input)) {
     input = toupper(input);
   }
 
@@ -206,14 +206,14 @@ void handleKey(Key key) {
   lastPressTime = now;
 }
 
-Mode getMode() {
-  return currentMode;
+CaseMode getCaseMode() {
+  return activeCaseMode;
 }
 
-void switchMode() {
-  int next = (int)currentMode + 1;
+void switchCaseMode() {
+  int next = (int)activeCaseMode + 1;
   if (next > 2) next = 0;
-  currentMode = (Mode)next;
+  activeCaseMode = (CaseMode)next;
 }
 
 void handleDelete(uint64_t time) {
@@ -245,6 +245,10 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
     // Move down
     case KEY_8:
       moveDown(currentLoopTime);
+      break;
+
+    case KEY_S:
+      drawMessage();
       break;
 
     case KEY_H:

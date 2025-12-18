@@ -24,7 +24,7 @@
  * @param index 
  * @return char 
  */
-char getCharByIndex(uint8_t index);
+char getBufferCharByIndex(uint8_t index);
 
 /**
  * @brief 

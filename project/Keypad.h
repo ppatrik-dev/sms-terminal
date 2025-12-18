@@ -36,7 +36,7 @@ typedef enum {
 
 typedef enum {
   MODE_LOWER, MODE_UPPER, MODE_SMART
-} Mode;
+} CaseMode;
 
 /**
  * @brief 
@@ -87,13 +87,13 @@ void handleKey(Key key);
  * 
  * @return Mode 
  */
-Mode getMode();
+CaseMode getCaseMode();
 
 /**
  * @brief 
  * 
  */
-void switchMode();
+void switchCaseMode();
 
 /**
  * @brief 
