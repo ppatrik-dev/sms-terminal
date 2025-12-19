@@ -434,23 +434,20 @@ void showHelp(uint64_t time) {
   int16_t col2_Key = 68;     // Right Column Key
   int16_t col2_Act = 80;     // Right Column Action
 
-  // --- ROW 1: Symbols / Up ---
   Display.setCursor(col1_Key, y); Display.print("0");
-  Display.setCursor(col1_Act, y); Display.print(": Space");
+  Display.setCursor(col1_Act, y); Display.print(": Clear");
   
   Display.setCursor(col2_Key, y); Display.print("2");
   Display.setCursor(col2_Act, y); Display.print(": UP");
   y += lineStep;
-  
-  // --- ROW 2: Space / Left ---
-  Display.setCursor(col1_Key, y); Display.print("1");
-  Display.setCursor(col1_Act, y); Display.print(": .,?!");
+
+  Display.setCursor(col1_Key, y); Display.print("5");
+  Display.setCursor(col1_Act, y); Display.print(": Send");
   
   Display.setCursor(col2_Key, y); Display.print("4");
   Display.setCursor(col2_Act, y); Display.print(": LEFT");
   y += lineStep;
 
-  // --- ROW 3: Mode / Right ---
   Display.setCursor(col1_Key, y); Display.print("*");
   Display.setCursor(col1_Act, y); Display.print(": Mode");
 
@@ -458,7 +455,6 @@ void showHelp(uint64_t time) {
   Display.setCursor(col2_Act, y); Display.print(": RIGHT");
   y += lineStep;
 
-  // --- ROW 4: Delete / Down ---
   Display.setCursor(col1_Key, y); Display.print("#");
   Display.setCursor(col1_Act, y); Display.print(": Del");
 
@@ -489,4 +485,31 @@ void hideHelp(uint64_t time) {
   Display.setCursor(x, y);
   drawCursor(true); // Make it visible again immediately
   lastBlinkTime = time;
+}
+
+void clearMessage() {
+  if (getBufferLen() > 0) {
+    clearBuffer();
+    scrollRow = 0;
+    drawMessage();
+  }
+}
+
+void sendMessage() {
+  if (getBufferLen() > 0) {
+    clearMessage();
+    Display.setCursor(MIN_X_POS, MIN_Y_POS);
+    Display.print("Sending...");
+    Display.display();
+
+    delay(2000);
+
+    Display.setCursor(MIN_X_POS, MIN_Y_POS + FONT_HEIGHT);
+    Display.print("SMS sent.");
+    Display.display();
+
+    delay(1000);
+
+    drawMessage();
+  }
 }

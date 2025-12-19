@@ -234,6 +234,11 @@ void handleDelete(uint64_t time) {
 
 void handleLongPress(Key key, uint64_t currentLoopTime) {
   switch (key) {
+    // Clear message
+    case KEY_0:
+      clearMessage();
+      break;
+
     // Move top
     case KEY_2:
       moveUp(currentLoopTime);
@@ -242,6 +247,11 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
     // Move left
     case KEY_4:
       moveLeft(currentLoopTime);
+      break;
+
+    // Send message
+    case KEY_5:
+      sendMessage();
       break;
 
     // Move right
@@ -254,10 +264,12 @@ void handleLongPress(Key key, uint64_t currentLoopTime) {
       moveDown(currentLoopTime);
       break;
 
+    // Show help
     case KEY_S:
       showHelp(currentLoopTime);
       break;
 
+    // Delete
     case KEY_H:
       if (currentLoopTime - lastDeleteTime > DELETE_SPEED_DELAY) {
         handleDelete(currentLoopTime);

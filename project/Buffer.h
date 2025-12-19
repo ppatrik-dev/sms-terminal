@@ -60,4 +60,10 @@ void removeBufferChar();
  */
 size_t getBufferLen();
 
+/**
+ * @brief 
+ * 
+ */
+void clearBuffer();
+
 #endif

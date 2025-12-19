@@ -156,4 +156,16 @@ void showHelp(uint64_t time);
  */
 void hideHelp(uint64_t time);
 
+/**
+ * @brief 
+ * 
+ */
+void clearMessage();
+
+/**
+ * @brief 
+ * 
+ */
+void sendMessage();
+
 #endif

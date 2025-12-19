@@ -45,6 +45,7 @@ void removeBufferCharOnIndex(uint8_t index) {
   
   Buffer[bufferLen - 1] = MESSAGE_END; 
 }
+
 void setBufferChar(char ch) {
   if (bufferIndex >= 0 && bufferIndex < MESSAGE_SIZE) {
     Buffer[bufferIndex] = ch;
@@ -53,4 +54,14 @@ void setBufferChar(char ch) {
 
 size_t getBufferLen() {
   return strlen(Buffer);
+}
+
+void clearBuffer() {
+  size_t bufferLen = strlen(Buffer);
+
+  for (int idx = 0; idx < bufferLen; ++idx) {
+    Buffer[idx] = MESSAGE_END;
+  }
+
+  bufferIndex = 0;
 }
