@@ -12,6 +12,7 @@
 #ifndef KEYPAD_H
 #define KEYPAD_H
 
+// Keypad cols and rows number
 #define KEYPAD_COLS 3
 #define KEYPAD_ROWS 4
 
@@ -21,13 +22,11 @@
 // Delay for long press
 #define LONG_PRESS_DELAY 500
 
-#define MODE_SWITCH_DELAY 500
-
-// Delete hold delay
+// Delay for delete long press
 #define DELETE_SPEED_DELAY 200
 
 /**
- * @brief 
+ * @brief Enum values for keypad keys.
  * 
  */
 typedef enum {
@@ -36,25 +35,28 @@ typedef enum {
   KEY_S, KEY_H, KEY_NONE = -1
 } Key;
 
+/**
+ * @brief Enum values for typing mode.
+ * 
+ */
 typedef enum {
   MODE_LOWER, MODE_UPPER, MODE_SMART
 } CaseMode;
 
 /**
- * @brief 
- * 
+ * @brief Initialize the keypad.
  */
 void initKeypad(); 
 
 /**
- * @brief 
+ * @brief Scan the keypad manually.
  * 
  * @return Key 
  */
 Key scanKeypad();
 
 /**
- * @brief
+ * @brief Get the symbols for the keypad key.
  * 
  * @param key 
  * @return const char* 
@@ -62,7 +64,7 @@ Key scanKeypad();
 const char* getSymbols(Key key);
 
 /**
- * @brief Get the Key Char object
+ * @brief Get the char to be displayed.
  * 
  * @param key 
  * @return char 
@@ -70,7 +72,15 @@ const char* getSymbols(Key key);
 char getKeyChar(Key key);
 
 /**
- * @brief 
+ * @brief Get char in smart case 
+ * 
+ * @param input 
+ * @return char 
+ */
+char getSmartCase(char input);
+
+/**
+ * @brief Display the char value.
  * 
  * @param key 
  * @param isCycle 
@@ -78,27 +88,27 @@ char getKeyChar(Key key);
 void displayKey(Key key, bool isCycle);
 
 /**
- * @brief 
+ * @brief Handle the pressed key.
  * 
  * @param key 
  */
 void handleKey(Key key);
 
 /**
- * @brief Get the Mode object
+ * @brief Get the active case mode.
  * 
- * @return Mode 
+ * @return CaseMode 
  */
 CaseMode getCaseMode();
 
 /**
- * @brief 
+ * @brief Switch the active case mode.
  * 
  */
 void switchCaseMode();
 
 /**
- * @brief 
+ * @brief Handle delete key pressed.
  * 
  */
 void handleDelete(uint64_t time);

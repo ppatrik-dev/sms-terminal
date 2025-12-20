@@ -23,10 +23,11 @@
 #define SPI_CS   5
 #define SPI_RST  17
 
-// Text font size config
+// Text font size
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 16
 
+// Header size
 #define HEADER_HEIGHT 10
 #define HEADER_FONT_WIDTH 6
 #define HEADER_FONT_HEIGHT 8
@@ -39,6 +40,7 @@
 #define CHARS_PER_LINE (SCREEN_WIDTH / FONT_WIDTH)
 #define VISIBLE_LINES ((SCREEN_HEIGHT / FONT_HEIGHT) - 1)
 
+// Coord limit values for x
 #define MIN_X_POS 0
 #define MAX_X_POS (MIN_X_POS + ((CHARS_PER_LINE - 1) * FONT_WIDTH))
 
@@ -46,35 +48,43 @@
 #define MIN_Y_POS FONT_HEIGHT
 #define MAX_Y_POS (VISIBLE_LINES * FONT_HEIGHT)
 
+/**
+ * @brief Enum values for move direction
+ * 
+ */
 typedef enum {
   MOVE_UP, MOVE_LEFT, MOVE_RIGHT, MOVE_DOWN
 } Move;
 
+/**
+ * @brief Structure for display coordinates.
+ * 
+ */
 typedef struct {
   int16_t x;
   int16_t y;
 } Coord;
 
 /**
- * @brief 
+ * @brief Initialize the display.
  * 
  */
 void initDisplay();
 
 /**
- * @brief 
+ * @brief Draw the header.
  * 
  */
 void drawHeader();
 
 /**
- * @brief 
+ * @brief Draw the message.
  * 
  */
 void drawMessage();
 
 /**
- * @brief
+ * @brief Get the the target coords based on move.
  * 
  * @param direction 
  * @return Coord 
@@ -82,88 +92,89 @@ void drawMessage();
 Coord getTargetCursorPos(Move move);
 
 /**
- * @brief 
+ * @brief Draw the char.
  * 
  * @param ch 
  */
 void drawChar(char ch, bool isCycle);
 
 /**
- * @brief 
+ * @brief Draw the cursor.
  * 
  * @param visible 
  */
 void drawCursor(bool visible);
 
 /**
- * @brief 
+ * @brief Show or hide the cursor.
  * 
  */
 void updateCursor();
 
 /**
- * @brief 
+ * @brief Enable the cursor.
  * 
  */
 void enableCursor();
 
 /**
- * @brief 
+ * @brief Disable the cursor.
  * 
  */
 void disableCursor();
 
 /**
- * @brief 
+ * @brief Delete char from text.
  * 
  */
 void deleteChar(uint64_t time);
 
 /**
- * @brief 
+ * @brief Move up in text.
  * 
  * @param time 
  */
 void moveUp(uint64_t time);
 
 /**
- * @brief 
+ * @brief Move left in text.
+
  * 
  */
 void moveLeft(uint64_t time);
 
 /**
- * @brief 
+ * @brief Move right in text.
  * 
  */
 void moveRight(uint64_t time);
 
 /**
- * @brief 
+ * @brief Move down in text.
  * 
  */
 void moveDown(uint64_t time);
 
 /**
- * @brief 
+ * @brief Show the help table.
  * 
  */
 void showHelp(uint64_t time);
 
 /**
- * @brief 
+ * @brief Hide the help table.
  * 
  */
 void hideHelp(uint64_t time);
 
 /**
- * @brief 
+ * @brief Clear the message.
  * 
  */
 void clearMessage();
 
 /**
- * @brief 
+ * @brief Send the message.
  * 
  */
 void sendMessage();

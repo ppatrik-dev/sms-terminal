@@ -18,7 +18,8 @@
 uint64_t now = 0;
 
 /**
- * @brief 
+ * @brief Start serial communication, itialize 
+ * display, keypad, and draw initial header
  * 
  */
 void setup() {
@@ -29,7 +30,9 @@ void setup() {
 }
 
 /**
- * @brief 
+ * @brief Get current time, scan the keypad and 
+ * handles the pressed key by calling the handle
+ * functions, redraw the header and cursor.
  * 
  */
 void loop() {
@@ -39,6 +42,7 @@ void loop() {
   
   if (key != KEY_NONE) {
     switch (key) {
+      // Numerical key
       case KEY_0: case KEY_1: 
       case KEY_2: case KEY_3: 
       case KEY_4: case KEY_5: 
@@ -47,10 +51,12 @@ void loop() {
         handleKey(key);
         break;
 
+      // Star key
       case KEY_S:
         switchCaseMode();
         break;
 
+      // Hashtag key
       case KEY_H:
         handleDelete(now);
         break;

@@ -19,7 +19,7 @@
 #define MESSAGE_END '\0'
 
 /**
- * @brief
+ * @brief Get char from buffer on specified index
  * 
  * @param index 
  * @return char 
@@ -27,14 +27,14 @@
 char getBufferCharByIndex(uint8_t index);
 
 /**
- * @brief 
+ * @brief Get char on the current position of bufferIndex
  * 
  * @return char 
  */
 char getBufferChar();
 
 /**
- * @brief
+ * @brief Set char on the current position of bufferIndex
  * 
  * @param ch 
  */
@@ -42,26 +42,28 @@ void setBufferChar(char ch);
 
 
 /**
- * @brief 
+ * @brief Remove char from buffer on specified position
+ * and shift the array if necessary
  * 
  * @param index 
  */
 void removeBufferCharOnIndex(uint8_t index);
 
 /**
- * @brief 
+ * @brief Remove char on the current position of bufferIndex
  * 
  */
 void removeBufferChar();
 
 /**
- * @brief 
+ * @brief Get current length of buffer
  * 
+ * @return size_t 
  */
 size_t getBufferLen();
 
 /**
- * @brief 
+ * @brief Clear whole buffer and reset bufferIndex
  * 
  */
 void clearBuffer();
