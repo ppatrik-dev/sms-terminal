@@ -499,7 +499,7 @@ void showHelp(uint64_t time) {
   int16_t y = MIN_Y_POS + 4;
   int16_t lineStep = 10;
   int16_t col1_Key = 4;
-  int16_t col1_Act = 16
+  int16_t col1_Act = 16;
   int16_t col2_Key = 68;
   int16_t col2_Act = 80;
 
